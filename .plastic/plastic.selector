@@ -1,0 +1,4 @@
+repository "PhotonCardGame@ZG13@cloud"
+  path "/"
+    br "/main"
+    co "/main"
