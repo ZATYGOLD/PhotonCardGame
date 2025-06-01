@@ -302,7 +302,7 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        DrawCards(5);
+        GameAPI.Instance.DrawCard(photonView.ViewID, 5);
     }
     #endregion
 
