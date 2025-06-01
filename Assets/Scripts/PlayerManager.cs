@@ -106,7 +106,7 @@ public class PlayerManager : MonoBehaviourPun
 
         InstantiateCharacter();
         CardManager.Instance.ShufflePlayerDeck(this);
-        DrawCards(5);
+        GameAPI.Instance.DrawCard(GetViewID(), 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);

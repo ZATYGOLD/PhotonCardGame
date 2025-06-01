@@ -146,12 +146,12 @@ public enum Ownership
     Remote,
     Shared
 }
-public enum CardZone
-{
-    Unknown = -1,
-    Hand = 0,
-    Lineup = 1,
-    SuperVillain = 2,
-    Played = 3
-}
+// public enum CardZone
+// {
+//     Unknown = -1,
+//     Hand = 0,
+//     Lineup = 1,
+//     SuperVillain = 2,
+//     Played = 3
+// }
 #endregion
