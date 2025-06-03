@@ -106,7 +106,7 @@ public class PlayerManager : MonoBehaviourPun
 
         InstantiateCharacter();
         CardManager.Instance.ShufflePlayerDeck(this);
-        GameAPI.Instance.DrawCard(GetViewID(), 5);
+        GameAPI.Instance.DrawCard(this, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
@@ -135,38 +135,38 @@ public class PlayerManager : MonoBehaviourPun
     #endregion
 
     #region Deck Interactions
-    public void DrawCards(int count)
-    {
-        if (!IsLocal) return;
-        for (int i = 0; i < count; i++)
-        {
-            if (deck.Count == 0) CardManager.Instance.ReshufflePlayerDiscardPileToDeck(this);
-            if (deck.Count == 0) break;
+    // public void DrawCards(int count)
+    // {
+    //     if (!IsLocal) return;
+    //     for (int i = 0; i < count; i++)
+    //     {
+    //         if (deck.Count == 0) CardManager.Instance.ReshufflePlayerDiscardPileToDeck(this);
+    //         if (deck.Count == 0) break;
 
-            CardData card = CardManager.Instance.PopTopCard(deck);
-            hand.Add(card);
+    //         CardData card = CardManager.Instance.PopTopCard(deck);
+    //         hand.Add(card);
 
-            CardManager.Instance.InstantiateHandCard(card, photonView.ViewID);
-            OnCardDrawn?.Invoke(card);
+    //         CardManager.Instance.InstantiateHandCard(card, photonView.ViewID);
+    //         OnCardDrawn?.Invoke(card);
 
-            photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered,
-                photonView.ViewID, card.GetCardID());
-        }
-    }
+    //         photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered,
+    //             photonView.ViewID, card.GetCardID());
+    //     }
+    // }
 
-    [PunRPC]
-    public void RPC_OnPlayerDraw(int viewID, int cardId)
-    {
-        if (!PLAYERS.TryGetValue(viewID, out var playerManager)) return;
-        int index = playerManager.deck.FindIndex(card => card.GetCardID() == cardId);
-        if (index >= 0) playerManager.deck.RemoveAt(index);
+    // [PunRPC]
+    // public void RPC_OnPlayerDraw(int viewID, int cardId)
+    // {
+    //     if (!PLAYERS.TryGetValue(viewID, out var playerManager)) return;
+    //     int index = playerManager.deck.FindIndex(card => card.GetCardID() == cardId);
+    //     if (index >= 0) playerManager.deck.RemoveAt(index);
 
-        CardData card = CardManager.Instance.FindCardDataById(cardId);
-        playerManager.hand.Add(card);
-        // TODO: Instantiate visual for other players' hands once UI container is ready
-        //InstantiateHandCard(card, playerViewID); //Reminder: enable when hand area exists
-        //OnPlayerCardDrawn?.Invoke(cardData, playerManager);
-    }
+    //     CardData card = CardManager.Instance.FindCardDataById(cardId);
+    //     playerManager.hand.Add(card);
+    //     // TODO: Instantiate visual for other players' hands once UI container is ready
+    //     //InstantiateHandCard(card, playerViewID); //Reminder: enable when hand area exists
+    //     //OnPlayerCardDrawn?.Invoke(cardData, playerManager);
+    // }
     #endregion
 
     #region Card Interactions
@@ -302,7 +302,7 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        GameAPI.Instance.DrawCard(photonView.ViewID, 5);
+        GameAPI.Instance.DrawCard(this, 5);
     }
     #endregion
 

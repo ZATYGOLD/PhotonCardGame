@@ -107,6 +107,7 @@ MonoBehaviour:
   - RPC_SetCharacter
   - RPC_DrawLineupCard
   - RPC_SyncDrawnCard
+  - RPC_AddDiscardPileToDeck
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

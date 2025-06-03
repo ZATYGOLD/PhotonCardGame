@@ -17,18 +17,16 @@ public class GameAPI : MonoBehaviourPun
         Instance = this;
     }
 
-    public void DrawCard(int viewID, int count = 1)
+    public void DrawCard(PlayerManager player, int count = 1)
     {
-        if (!PlayerManager.TryGetLocalPlayer(viewID, out var pm)) return;
-
-        var sourceList = pm.deck;
-        var destinationList = pm.hand;
+        var sourceList = player.deck;
+        var destinationList = player.hand;
 
         for (int i = 0; i < count; i++)
         {
             if (sourceList.Count <= 0)
             {
-                Shuffle(sourceList);
+                AddDiscardPileToDeck(player);
                 if (sourceList.Count == 0) return;
             }
 
@@ -37,21 +35,42 @@ public class GameAPI : MonoBehaviourPun
             destinationList.Add(card);
 
             PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-                new object[] { card.GetCardID(), viewID });
+                new object[] { card.GetCardID(), player.GetViewID() });
 
-            photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered, viewID, card.GetCardID());
+            photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
         }
     }
 
     [PunRPC]
-    public void RPC_OnPlayerDraw(int viewID, int cardId)
+    private void RPC_OnPlayerDraw(int viewID, int cardId)
     {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var pm)) return;
-        int index = pm.deck.FindIndex(card => card.GetCardID() == cardId);
-        if (index >= 0) pm.deck.RemoveAt(index);
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+        int index = player.deck.FindIndex(card => card.GetCardID() == cardId);
+        if (index >= 0) player.deck.RemoveAt(index);
 
         CardData card = CardManager.Instance.FindCardDataById(cardId);
-        pm.hand.Add(card);
+        player.hand.Add(card);
+    }
+
+    public void AddDiscardPileToDeck(PlayerManager player)
+    {
+        if (player.discardPile.Count == 0) return;
+
+        player.deck.AddRange(player.discardPile);
+        player.discardPile.Clear();
+        Shuffle(player.deck);
+
+        photonView.RPC(nameof(RPC_AddDiscardPileToDeck), RpcTarget.OthersBuffered,
+            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
+    }
+
+    [PunRPC]
+    private void RPC_AddDiscardPileToDeck(int playerViewID, int[] cardIds)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+
+        playerManager.deck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+        playerManager.discardPile.Clear();
     }
 
     #region Helpers

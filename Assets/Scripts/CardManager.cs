@@ -171,26 +171,26 @@ public class CardManager : MonoBehaviourPun
             new object[] { data.GetCardID(), -1, zoneIndex });
     }
 
-    public void ReshufflePlayerDiscardPileToDeck(PlayerManager playerManager)
-    {
-        if (playerManager.discardPile.Count == 0) return;
+    // public void ReshufflePlayerDiscardPileToDeck(PlayerManager playerManager)
+    // {
+    //     if (playerManager.discardPile.Count == 0) return;
 
-        playerManager.deck.AddRange(playerManager.discardPile);
-        playerManager.discardPile.Clear();
-        Shuffle(playerManager.deck);
+    //     playerManager.deck.AddRange(playerManager.discardPile);
+    //     playerManager.discardPile.Clear();
+    //     Shuffle(playerManager.deck);
 
-        photonView.RPC(nameof(RPC_ReshufflePlayerDiscardPileToDeck), RpcTarget.OthersBuffered,
-            playerManager.GetViewID(), ConvertCardDataToIds(playerManager.deck));
-    }
+    //     photonView.RPC(nameof(RPC_ReshufflePlayerDiscardPileToDeck), RpcTarget.OthersBuffered,
+    //         playerManager.GetViewID(), ConvertCardDataToIds(playerManager.deck));
+    // }
 
-    [PunRPC]
-    public void RPC_ReshufflePlayerDiscardPileToDeck(int playerViewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+    // [PunRPC]
+    // public void RPC_ReshufflePlayerDiscardPileToDeck(int playerViewID, int[] cardIds)
+    // {
+    //     if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
 
-        playerManager.deck = ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile.Clear();
-    }
+    //     playerManager.deck = ConvertCardIdsToCardData(cardIds);
+    //     playerManager.discardPile.Clear();
+    // }
 
     private void Shuffle(List<CardData> deck)
     {
