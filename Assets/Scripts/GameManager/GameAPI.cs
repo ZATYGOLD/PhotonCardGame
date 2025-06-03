@@ -17,6 +17,14 @@ public class GameAPI : MonoBehaviourPun
         Instance = this;
     }
 
+    [PunRPC]
+    public void RPC_ReceiveCharacterIndex(int charIndex)
+    {
+        PlayerManager local = PlayerManager.Local;
+        local.character = GameManager.Instance.characterDeck[charIndex];
+        local.Setup(PhotonNetwork.LocalPlayer);
+    }
+
     public void DrawCard(PlayerManager player, int count = 1)
     {
         var sourceList = player.deck;
@@ -42,7 +50,7 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void RPC_OnPlayerDraw(int viewID, int cardId)
+    public void RPC_OnPlayerDraw(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
         int index = player.deck.FindIndex(card => card.GetCardID() == cardId);
@@ -65,7 +73,7 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void RPC_AddDiscardPileToDeck(int playerViewID, int[] cardIds)
+    public void RPC_AddDiscardPileToDeck(int playerViewID, int[] cardIds)
     {
         if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
 

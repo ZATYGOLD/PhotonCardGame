@@ -97,16 +97,8 @@ public class GameManager : MonoBehaviourPun
             int charIndex = list[index];
             list.RemoveAt(index);
 
-            photonView.RPC(nameof(RPC_ReceiveCharacterIndex), player, charIndex);
+            photonView.RPC(nameof(GameAPI.Instance.RPC_ReceiveCharacterIndex), player, charIndex);
         }
-    }
-
-    [PunRPC]
-    void RPC_ReceiveCharacterIndex(int charIndex)
-    {
-        PlayerManager local = PlayerManager.Local;
-        local.character = characterDeck[charIndex];
-        local.Setup(PhotonNetwork.LocalPlayer);
     }
 
     private void SetLineUp()
