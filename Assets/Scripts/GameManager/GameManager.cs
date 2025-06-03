@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviourPun
 
     [Header("Prefabs")]
     [SerializeField] private GameObject playerPrefab;
+    [SerializeField] private GameObject boardCardPrefab;
 
     public int power = 0;
 
@@ -103,11 +104,48 @@ public class GameManager : MonoBehaviourPun
 
     private void SetLineUp()
     {
-        GameLogic.Instance.DrawCard(mainDeck, lineUpCards, 5);
-
-        //CardManager.Instance.DrawFromMainDeckToLineUp(5); //TODO: Change number to variable, set in game config
+        DrawMainDeckCard(5);
         CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config
-        GameLogic.Instance.ManagePower(PowerOperation.Reset);
+        ManagePower(PowerOperation.Reset);
+    }
+
+    public void DrawMainDeckCard(int count = 1)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (mainDeck.Count <= 0)
+            {
+                Shuffle(mainDeck);
+                if (mainDeck.Count == 0) return;
+            }
+
+            CardData card = mainDeck[0];
+            mainDeck.RemoveAt(0);
+            lineUpCards.Add(card);
+
+            PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), -1, 0 }
+            );
+
+            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncMainDeckAndLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+        }
+    }
+
+    public void ManagePower(PowerOperation operation, int amount = 0, CardData cardData = null)
+    {
+        switch (operation)
+        {
+            case PowerOperation.Add:
+                power += amount;
+                break;
+            case PowerOperation.Subtract:
+                if (cardData != null) power -= cardData.GetCardCost();
+                else if (cardData == null) power -= amount;
+                break;
+            case PowerOperation.Reset:
+                power = 0;
+                break;
+        }
     }
 
     #region Turn Setup
@@ -201,5 +239,6 @@ public class GameManager : MonoBehaviourPun
 }
 
 #region Enums
+public enum Ownership { Unknown, Local, Remote, Shared }
 public enum PowerOperation { Add, Subtract, Reset }
 #endregion

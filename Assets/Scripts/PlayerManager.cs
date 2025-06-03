@@ -14,6 +14,7 @@ public class PlayerManager : MonoBehaviourPun
     public Player Player { get; private set; }
     public int ActorNumber => photonView.OwnerActorNr;
     public bool IsLocal => photonView.IsMine;
+    private PhotonView GameAPIView;
 
     [Header("Card Prefabs")]
     [SerializeField] private GameObject characterCardPrefab;
@@ -60,6 +61,7 @@ public class PlayerManager : MonoBehaviourPun
             if (Local != null) { Destroy(gameObject); return; }
             Local = this;
             SetZoneEnums();
+            GameAPIView = GameAPI.Instance.photonView;
         }
     }
 
@@ -106,7 +108,7 @@ public class PlayerManager : MonoBehaviourPun
 
         InstantiateCharacter();
         CardManager.Instance.ShufflePlayerDeck(this);
-        GameAPI.Instance.DrawCard(this, 5);
+        DrawCard(this, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
@@ -133,6 +135,42 @@ public class PlayerManager : MonoBehaviourPun
         playerManager.character = CardManager.Instance.FindCardDataById(cardId);
     }
     #endregion
+
+    public void DrawCard(PlayerManager player, int count = 1)
+    {
+        var sourceList = player.deck;
+        var destinationList = player.hand;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (sourceList.Count <= 0)
+            {
+                AddDiscardPileToDeck(player);
+                if (sourceList.Count == 0) return;
+            }
+
+            CardData card = sourceList[0];
+            sourceList.RemoveAt(0);
+            destinationList.Add(card);
+
+            PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), player.GetViewID() });
+
+            GameAPIView.RPC(nameof(GameAPI.Instance.RPC_PlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
+        }
+    }
+
+    public void AddDiscardPileToDeck(PlayerManager player)
+    {
+        if (player.discardPile.Count == 0) return;
+
+        player.deck.AddRange(player.discardPile);
+        player.discardPile.Clear();
+        GameAPI.Instance.Shuffle(player.deck);
+
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_AddDiscardPileToDeck), RpcTarget.OthersBuffered,
+            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
+    }
 
     #region Deck Interactions
     // public void DrawCards(int count)
@@ -302,7 +340,7 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        GameAPI.Instance.DrawCard(this, 5);
+        DrawCard(this, 5);
     }
     #endregion
 

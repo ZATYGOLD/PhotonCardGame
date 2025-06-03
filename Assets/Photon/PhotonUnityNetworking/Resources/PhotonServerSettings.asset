@@ -108,6 +108,8 @@ MonoBehaviour:
   - RPC_DrawLineupCard
   - RPC_SyncDrawnCard
   - RPC_AddDiscardPileToDeck
+  - RPC_SyncMainDeckAndLineUp
+  - RPC_PlayerDraw
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

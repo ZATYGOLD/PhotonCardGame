@@ -2619,6 +2619,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerPrefab: {fileID: 3369996348208746439, guid: 548ea9e3c8dea6b42af4ad65a9bf7e6a, type: 3}
+  boardCardPrefab: {fileID: 4239257142109227403, guid: df1f497173aec7040b258bcce847c522, type: 3}
   power: 0
   playerDeck:
   - {fileID: 11400000, guid: ac6c635273047134bbb05def14023e0e, type: 2}

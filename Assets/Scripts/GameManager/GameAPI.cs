@@ -25,32 +25,17 @@ public class GameAPI : MonoBehaviourPun
         local.Setup(PhotonNetwork.LocalPlayer);
     }
 
-    public void DrawCard(PlayerManager player, int count = 1)
+    [PunRPC]
+    public void RPC_SyncMainDeckAndLineUp(int cardId)
     {
-        var sourceList = player.deck;
-        var destinationList = player.hand;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (sourceList.Count <= 0)
-            {
-                AddDiscardPileToDeck(player);
-                if (sourceList.Count == 0) return;
-            }
-
-            CardData card = sourceList[0];
-            sourceList.RemoveAt(0);
-            destinationList.Add(card);
-
-            PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-                new object[] { card.GetCardID(), player.GetViewID() });
-
-            photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
-        }
+        GameManager gm = GameManager.Instance;
+        int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
+        if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
+        gm.lineUpCards.Add(CardManager.Instance.FindCardDataById(cardId));
     }
 
     [PunRPC]
-    public void RPC_OnPlayerDraw(int viewID, int cardId)
+    public void RPC_PlayerDraw(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
         int index = player.deck.FindIndex(card => card.GetCardID() == cardId);
@@ -58,18 +43,6 @@ public class GameAPI : MonoBehaviourPun
 
         CardData card = CardManager.Instance.FindCardDataById(cardId);
         player.hand.Add(card);
-    }
-
-    public void AddDiscardPileToDeck(PlayerManager player)
-    {
-        if (player.discardPile.Count == 0) return;
-
-        player.deck.AddRange(player.discardPile);
-        player.discardPile.Clear();
-        Shuffle(player.deck);
-
-        photonView.RPC(nameof(RPC_AddDiscardPileToDeck), RpcTarget.OthersBuffered,
-            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
     [PunRPC]
@@ -82,7 +55,7 @@ public class GameAPI : MonoBehaviourPun
     }
 
     #region Helpers
-    private void Shuffle<T>(List<T> list)
+    public void Shuffle<T>(List<T> list)
     {
         var rand = new System.Random();
         for (int i = list.Count - 1; i > 0; i--)
