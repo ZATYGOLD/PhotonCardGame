@@ -105,7 +105,8 @@ public class GameManager : MonoBehaviourPun
     private void SetLineUp()
     {
         DrawMainDeckCard(5);
-        CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config
+        DrawSuperVillaincard();
+        //CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config
         ManagePower(PowerOperation.Reset);
     }
 
@@ -124,10 +125,32 @@ public class GameManager : MonoBehaviourPun
             lineUpCards.Add(card);
 
             PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-                new object[] { card.GetCardID(), -1, 0 }
+                new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
             );
 
             photonView.RPC(nameof(GameAPI.Instance.RPC_SyncMainDeckAndLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+        }
+    }
+
+    public void DrawSuperVillaincard(int count = 1)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (superVillainDeck.Count <= 0)
+            {
+                Shuffle(superVillainDeck);
+                if (superVillainDeck.Count == 0) return;
+            }
+
+            CardData card = superVillainDeck[0];
+            superVillainDeck.RemoveAt(0);
+            superVillainCards.Add(card);
+
+            PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
+            );
+
+            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 

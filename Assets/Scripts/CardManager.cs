@@ -84,35 +84,35 @@ public class CardManager : MonoBehaviourPun
         }
     }
 
-    public void DrawFromMainDeckToLineUp(int count)
-    {
-        DrawOntoBoard(GameManager.Instance.mainDeck, GameManager.Instance.lineUpCards,
-            count, 0, OnLineUpCardDrawn, nameof(RPC_DrawFromMainDeck));
-    }
+    // public void DrawFromMainDeckToLineUp(int count)
+    // {
+    //     DrawOntoBoard(GameManager.Instance.mainDeck, GameManager.Instance.lineUpCards,
+    //         count, 0, OnLineUpCardDrawn, nameof(RPC_DrawFromMainDeck));
+    // }
 
-    [PunRPC]
-    public void RPC_DrawFromMainDeck(int cardId)
-    {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
-        gm.lineUpCards.Add(FindCardDataById(cardId));
-    }
+    // [PunRPC]
+    // public void RPC_DrawFromMainDeck(int cardId)
+    // {
+    //     GameManager gm = GameManager.Instance;
+    //     int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
+    //     if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
+    //     gm.lineUpCards.Add(FindCardDataById(cardId));
+    // }
 
-    public void DrawFromSuperVillainDeckToLineUp(int count)
-    {
-        DrawOntoBoard(GameManager.Instance.superVillainDeck, GameManager.Instance.superVillainCards,
-            count, 1, OnSuperVillainCardDrawn, nameof(RPC_DrawFromVillainDeck));
-    }
+    // public void DrawFromSuperVillainDeckToLineUp(int count)
+    // {
+    //     DrawOntoBoard(GameManager.Instance.superVillainDeck, GameManager.Instance.superVillainCards,
+    //         count, 1, OnSuperVillainCardDrawn, nameof(RPC_DrawFromVillainDeck));
+    // }
 
-    [PunRPC]
-    public void RPC_DrawFromVillainDeck(int cardId)
-    {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
-        gm.superVillainCards.Add(FindCardDataById(cardId));
-    }
+    // [PunRPC]
+    // public void RPC_DrawFromVillainDeck(int cardId)
+    // {
+    //     GameManager gm = GameManager.Instance;
+    //     int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
+    //     if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
+    //     gm.superVillainCards.Add(FindCardDataById(cardId));
+    // }
 
     public void InitializeDecks()
     {

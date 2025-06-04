@@ -35,6 +35,15 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
+    public void RPC_SyncSuperVillainDeck(int cardId)
+    {
+        GameManager gm = GameManager.Instance;
+        int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
+        if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
+        gm.superVillainCards.Add(CardManager.Instance.FindCardDataById(cardId));
+    }
+
+    [PunRPC]
     public void RPC_PlayerDraw(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
