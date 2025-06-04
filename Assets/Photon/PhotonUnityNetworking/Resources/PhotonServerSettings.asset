@@ -115,6 +115,10 @@ MonoBehaviour:
   - RPC_SyncLineUp
   - RPC_SyncPlayerDeck
   - RPC_SyncSuperVillain
+  - RPC_SyncDiscardPileToDeck
+  - RPC_SyncPlayedCardsToDiscardPile
+  - RPC_SyncPlayerDraw
+  - RPC_SyncPlayerHand
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

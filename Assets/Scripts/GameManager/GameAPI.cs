@@ -71,7 +71,7 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_PlayerDraw(int viewID, int cardId)
+    public void RPC_SyncPlayerDraw(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
         int index = player.deck.FindIndex(card => card.GetCardID() == cardId);
@@ -82,11 +82,32 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_AddDiscardPileToDeck(int viewID, int[] cardIds)
+    public void RPC_SyncDiscardPileToDeck(int viewID, int[] cardIds)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
         player.deck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
         player.discardPile.Clear();
+    }
+
+    [PunRPC]
+    public void RPC_SyncPlayerHand(int viewID, int[] ids)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+        player.discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(ids));
+        player.hand.Clear();
+    }
+
+    [PunRPC]
+    public void RPC_SyncPlayedCardsToDiscardPile(int viewID, int[] cardIds)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+
+        foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
+        { Destroy(cardObject.gameObject); }
+
+        List<CardData> playedCards = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+        player.discardPile.AddRange(playedCards);
+        GameManager.Instance.playedCards.Clear();
     }
 
     #region Helpers

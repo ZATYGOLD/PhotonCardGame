@@ -108,7 +108,6 @@ public class PlayerManager : MonoBehaviourPun
 
         InstantiateCharacter();
         ShuffleDeck(this);
-        //CardManager.Instance.ShufflePlayerDeck(this);
         DrawCard(this, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
@@ -150,7 +149,7 @@ public class PlayerManager : MonoBehaviourPun
             PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
                 new object[] { card.GetCardID(), player.GetViewID() });
 
-            GameAPIView.RPC(nameof(GameAPI.Instance.RPC_PlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
+            GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
         }
     }
 
@@ -162,7 +161,7 @@ public class PlayerManager : MonoBehaviourPun
         player.discardPile.Clear();
         GameAPI.Instance.Shuffle(player.deck);
 
-        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_AddDiscardPileToDeck), RpcTarget.OthersBuffered,
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
@@ -178,52 +177,33 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (!IsLocal) return;
         int[] cardIds = hand.Select(card => card.GetCardID()).ToArray();
-        photonView.RPC(nameof(RPC_SyncDiscardHand), RpcTarget.OthersBuffered,
+
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncPlayerHand), RpcTarget.OthersBuffered,
             photonView.ViewID, cardIds);
+
         hand.Clear();
         DestroyZoneVisual(CardZone.Hand);
         discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(cardIds));
         RefreshCounters();
     }
 
-    [PunRPC]
-    public void RPC_SyncDiscardHand(int viewID, int[] ids)
-    {
-        if (!PLAYERS.TryGetValue(viewID, out var playerManager)) return;
-        playerManager.discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(ids));
-        playerManager.hand.Clear();
-    }
-
     public void SendPlayedCardsToDiscardPile()
     {
         if (!photonView.IsMine) return;
         List<CardData> playedCards = GameManager.Instance.playedCards;
-
         if (playedCards == null || playedCards.Count <= 0) return;
 
         foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
         { Destroy(cardObject.gameObject); }
-
         discardPile.AddRange(playedCards);
 
-        photonView.RPC(nameof(RPC_SendPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
             GetViewID(), CardManager.Instance.ConvertCardDataToIds(playedCards));
 
         playedCards.Clear();
     }
 
-    [PunRPC]
-    public void RPC_SendPlayedCardsToDiscardPile(int playerViewID, int[] cardIds)
-    {
-        if (!PLAYERS.TryGetValue(playerViewID, out var playerManager)) return;
 
-        foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
-        { Destroy(cardObject.gameObject); }
-
-        List<CardData> playedCards = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile.AddRange(playedCards);
-        GameManager.Instance.playedCards.Clear();
-    }
     #endregion
 
     #region Player Lookup
