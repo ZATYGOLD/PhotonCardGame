@@ -56,7 +56,8 @@ public class GameManager : MonoBehaviourPun
         if (PhotonNetwork.IsMasterClient)
         {
             AssignCharacters();
-            CardManager.Instance.InitializeDecks();
+            InitializeDecks();
+            //CardManager.Instance.InitializeDecks();
             SetLineUp();
             SetupTurnOrder();
         }
@@ -88,6 +89,7 @@ public class GameManager : MonoBehaviourPun
     private void AssignCharacters()
     {
         if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(characterDeck);
 
         List<int> list = Enumerable.Range(0, characterDeck.Count).ToList();
 
@@ -102,8 +104,18 @@ public class GameManager : MonoBehaviourPun
         }
     }
 
+    private void InitializeDecks()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(mainDeck);
+        photonView.RPC(nameof(GameAPI.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
+        Shuffle(superVillainDeck);
+        photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
+    }
+
     private void SetLineUp()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
         DrawMainDeckCard(5);
         DrawSuperVillaincard();
         //CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config

@@ -114,12 +114,12 @@ public class CardManager : MonoBehaviourPun
     //     gm.superVillainCards.Add(FindCardDataById(cardId));
     // }
 
-    public void InitializeDecks()
-    {
-        ShuffleDeck(GameManager.Instance.mainDeck, OnDeckShuffled, nameof(RPC_ShuffleGameDeck));
-        ShuffleDeck(GameManager.Instance.characterDeck, OnDeckShuffled, nameof(RPC_ShuffleCharacterDeck));
-        ShuffleDeck(GameManager.Instance.superVillainDeck, OnDeckShuffled, nameof(RPC_ShuffleSuperVillainDeck));
-    }
+    // public void InitializeDecks()
+    // {
+    //     ShuffleDeck(GameManager.Instance.mainDeck, OnDeckShuffled, nameof(RPC_ShuffleGameDeck));
+    //     ShuffleDeck(GameManager.Instance.characterDeck, OnDeckShuffled, nameof(RPC_ShuffleCharacterDeck));
+    //     ShuffleDeck(GameManager.Instance.superVillainDeck, OnDeckShuffled, nameof(RPC_ShuffleSuperVillainDeck));
+    // }
 
     private void ShuffleDeck(List<CardData> deck, Action<List<CardData>> action, string rpcName)
     {
@@ -132,23 +132,23 @@ public class CardManager : MonoBehaviourPun
         photonView.RPC(rpcName, RpcTarget.OthersBuffered, cardIds);
     }
 
-    [PunRPC]
-    public void RPC_ShuffleGameDeck(int[] cardIds)
-    {
-        GameManager.Instance.mainDeck = ConvertCardIdsToCardData(cardIds);
-    }
+    // [PunRPC]
+    // public void RPC_ShuffleGameDeck(int[] cardIds)
+    // {
+    //     GameManager.Instance.mainDeck = ConvertCardIdsToCardData(cardIds);
+    // }
 
-    [PunRPC]
-    public void RPC_ShuffleCharacterDeck(int[] cardIds)
-    {
-        GameManager.Instance.characterDeck = ConvertCardIdsToCardData(cardIds);
-    }
+    // [PunRPC]
+    // public void RPC_ShuffleCharacterDeck(int[] cardIds)
+    // {
+    //     GameManager.Instance.characterDeck = ConvertCardIdsToCardData(cardIds);
+    // }
 
-    [PunRPC]
-    public void RPC_ShuffleSuperVillainDeck(int[] cardIds)
-    {
-        GameManager.Instance.superVillainDeck = ConvertCardIdsToCardData(cardIds);
-    }
+    // [PunRPC]
+    // public void RPC_ShuffleSuperVillainDeck(int[] cardIds)
+    // {
+    //     GameManager.Instance.superVillainDeck = ConvertCardIdsToCardData(cardIds);
+    // }
 
     #endregion
 

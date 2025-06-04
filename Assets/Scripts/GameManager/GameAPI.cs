@@ -18,6 +18,24 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
+    public void RPC_SyncMainDeck(int[] cardIds)
+    {
+        GameManager.Instance.mainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+    }
+
+    // [PunRPC]
+    // public void RPC_SyncCharacterDeck(int[] cardIds)
+    // {
+    //     GameManager.Instance.characterDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+    // }
+
+    [PunRPC]
+    public void RPC_SyncSuperVillainDeck(int[] cardIds)
+    {
+        GameManager.Instance.superVillainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+    }
+
+    [PunRPC]
     public void RPC_ReceiveCharacterIndex(int charIndex)
     {
         PlayerManager local = PlayerManager.Local;
