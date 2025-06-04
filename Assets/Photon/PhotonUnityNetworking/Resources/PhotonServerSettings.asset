@@ -112,6 +112,9 @@ MonoBehaviour:
   - RPC_PlayerDraw
   - RPC_SyncSuperVillainDeck
   - RPC_SyncMainDeck
+  - RPC_SyncLineUp
+  - RPC_SyncPlayerDeck
+  - RPC_SyncSuperVillain
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

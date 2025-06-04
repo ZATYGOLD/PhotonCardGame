@@ -24,9 +24,27 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
+    public void RPC_SyncLineUp(int cardId)
+    {
+        GameManager gm = GameManager.Instance;
+        int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
+        if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
+        gm.lineUpCards.Add(CardManager.Instance.FindCardDataById(cardId));
+    }
+
+    [PunRPC]
     public void RPC_SyncSuperVillainDeck(int[] cardIds)
     {
         GameManager.Instance.superVillainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+    }
+
+    [PunRPC]
+    public void RPC_SyncSuperVillain(int cardId)
+    {
+        GameManager gm = GameManager.Instance;
+        int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
+        if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
+        gm.superVillainCards.Add(CardManager.Instance.FindCardDataById(cardId));
     }
 
     [PunRPC]
@@ -45,21 +63,11 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_SyncMainDeckAndLineUp(int cardId)
+    public void RPC_SyncPlayerDeck(int viewID, int[] cardIds)
     {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
-        gm.lineUpCards.Add(CardManager.Instance.FindCardDataById(cardId));
-    }
-
-    [PunRPC]
-    public void RPC_SyncSuperVillainDeck(int cardId)
-    {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
-        gm.superVillainCards.Add(CardManager.Instance.FindCardDataById(cardId));
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+        List<CardData> newDeck = cardIds.Select(cardId => CardManager.Instance.FindCardDataById(cardId)).ToList();
+        player.deck = newDeck;
     }
 
     [PunRPC]

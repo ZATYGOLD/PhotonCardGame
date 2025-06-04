@@ -107,7 +107,8 @@ public class PlayerManager : MonoBehaviourPun
         deck = GameManager.Instance.playerDeck;
 
         InstantiateCharacter();
-        CardManager.Instance.ShufflePlayerDeck(this);
+        ShuffleDeck(this);
+        //CardManager.Instance.ShufflePlayerDeck(this);
         DrawCard(this, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
@@ -162,6 +163,13 @@ public class PlayerManager : MonoBehaviourPun
         GameAPI.Instance.Shuffle(player.deck);
 
         GameAPIView.RPC(nameof(GameAPI.Instance.RPC_AddDiscardPileToDeck), RpcTarget.OthersBuffered,
+            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
+    }
+
+    public void ShuffleDeck(PlayerManager player)
+    {
+        GameManager.Instance.Shuffle(player.deck);
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 

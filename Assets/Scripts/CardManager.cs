@@ -44,26 +44,26 @@ public class CardManager : MonoBehaviourPun
 
     #region Deck Operations
 
-    public void ShufflePlayerDeck(PlayerManager playerManager)
-    {
-        if (playerManager == null) return;
+    // public void ShufflePlayerDeck(PlayerManager playerManager)
+    // {
+    //     if (playerManager == null) return;
 
-        Shuffle(playerManager.deck);
-        OnDeckShuffled?.Invoke(playerManager.deck);
-        int[] cardIds = playerManager.deck.Select(card => card.GetCardID()).ToArray();
+    //     Shuffle(playerManager.deck);
+    //     OnDeckShuffled?.Invoke(playerManager.deck);
+    //     int[] cardIds = playerManager.deck.Select(card => card.GetCardID()).ToArray();
 
-        photonView.RPC(nameof(RPC_ShufflePlayerDeck), RpcTarget.OthersBuffered,
-            playerManager.GetViewID(), cardIds);
-    }
+    //     photonView.RPC(nameof(RPC_ShufflePlayerDeck), RpcTarget.OthersBuffered,
+    //         playerManager.GetViewID(), cardIds);
+    // }
 
-    [PunRPC]
-    public void RPC_ShufflePlayerDeck(int playerViewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
-        List<CardData> newDeck = cardIds.Select(cardId => FindCardDataById(cardId)).ToList();
-        playerManager.deck = newDeck;
-        OnDeckShuffled?.Invoke(newDeck);
-    }
+    // [PunRPC]
+    // public void RPC_ShufflePlayerDeck(int playerViewID, int[] cardIds)
+    // {
+    //     if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+    //     List<CardData> newDeck = cardIds.Select(cardId => FindCardDataById(cardId)).ToList();
+    //     playerManager.deck = newDeck;
+    //     OnDeckShuffled?.Invoke(newDeck);
+    // }
 
     #endregion
 

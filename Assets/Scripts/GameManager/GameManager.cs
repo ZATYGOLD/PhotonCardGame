@@ -140,7 +140,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
             );
 
-            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncMainDeckAndLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
@@ -162,7 +162,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
             );
 
-            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
@@ -261,7 +261,7 @@ public class GameManager : MonoBehaviourPun
     #endregion
 
     #region Helper
-    private void Shuffle<T>(List<T> list)
+    public void Shuffle<T>(List<T> list)
     {
         var rand = new System.Random();
         for (int i = list.Count - 1; i > 0; i--)
