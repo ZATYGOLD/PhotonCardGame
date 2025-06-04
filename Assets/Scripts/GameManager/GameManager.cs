@@ -57,7 +57,6 @@ public class GameManager : MonoBehaviourPun
         {
             AssignCharacters();
             InitializeDecks();
-            //CardManager.Instance.InitializeDecks();
             SetLineUp();
             SetupTurnOrder();
         }
@@ -118,7 +117,6 @@ public class GameManager : MonoBehaviourPun
         if (!PhotonNetwork.IsMasterClient) return;
         DrawMainDeckCard(5);
         DrawSuperVillaincard();
-        //CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config
         ManagePower(PowerOperation.Reset);
     }
 
