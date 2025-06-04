@@ -69,20 +69,20 @@ public class CardManager : MonoBehaviourPun
 
     #region Game-Specific Deck Management
 
-    private void DrawOntoBoard(List<CardData> source, List<CardData> destination, int count,
-        int zone, Action<CardData> onDrawCard, string rpcName)
-    {
-        if (!PhotonNetwork.IsMasterClient) return;
-        if (source == null || source.Count <= 0) return;
-        for (int i = 0; i < count; i++)
-        {
-            CardData card = PopTopCard(source);
-            destination.Add(card);
-            InstantiateBoardCard(card, zone);
-            onDrawCard?.Invoke(card);
-            photonView.RPC(rpcName, RpcTarget.OthersBuffered, card.GetCardID());
-        }
-    }
+    // private void DrawOntoBoard(List<CardData> source, List<CardData> destination, int count,
+    //     int zone, Action<CardData> onDrawCard, string rpcName)
+    // {
+    //     if (!PhotonNetwork.IsMasterClient) return;
+    //     if (source == null || source.Count <= 0) return;
+    //     for (int i = 0; i < count; i++)
+    //     {
+    //         CardData card = PopTopCard(source);
+    //         destination.Add(card);
+    //         InstantiateBoardCard(card, zone);
+    //         onDrawCard?.Invoke(card);
+    //         photonView.RPC(rpcName, RpcTarget.OthersBuffered, card.GetCardID());
+    //     }
+    // }
 
     // public void DrawFromMainDeckToLineUp(int count)
     // {
