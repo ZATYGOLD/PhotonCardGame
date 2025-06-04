@@ -124,15 +124,8 @@ public class PlayerManager : MonoBehaviourPun
         PhotonNetwork.Instantiate(characterCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
             new object[] { cardId, photonView.ViewID });
 
-        photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered,
+        GameAPIView.RPC(nameof(GameAPI.Instance.RPC_SyncCharacters), RpcTarget.OthersBuffered,
             photonView.ViewID, cardId);
-    }
-
-    [PunRPC]
-    public void RPC_SyncCharacters(int ownerViewID, int cardId)
-    {
-        if (!PLAYERS.TryGetValue(ownerViewID, out var playerManager)) return;
-        playerManager.character = CardManager.Instance.FindCardDataById(cardId);
     }
     #endregion
 

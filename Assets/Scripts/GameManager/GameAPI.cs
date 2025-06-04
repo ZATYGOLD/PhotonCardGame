@@ -23,12 +23,6 @@ public class GameAPI : MonoBehaviourPun
         GameManager.Instance.mainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
     }
 
-    // [PunRPC]
-    // public void RPC_SyncCharacterDeck(int[] cardIds)
-    // {
-    //     GameManager.Instance.characterDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-    // }
-
     [PunRPC]
     public void RPC_SyncSuperVillainDeck(int[] cardIds)
     {
@@ -41,6 +35,13 @@ public class GameAPI : MonoBehaviourPun
         PlayerManager local = PlayerManager.Local;
         local.character = GameManager.Instance.characterDeck[charIndex];
         local.Setup(PhotonNetwork.LocalPlayer);
+    }
+
+    [PunRPC]
+    public void RPC_SyncCharacters(int viewID, int cardId)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+        player.character = CardManager.Instance.FindCardDataById(cardId);
     }
 
     [PunRPC]
@@ -73,12 +74,11 @@ public class GameAPI : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_AddDiscardPileToDeck(int playerViewID, int[] cardIds)
+    public void RPC_AddDiscardPileToDeck(int viewID, int[] cardIds)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
-
-        playerManager.deck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile.Clear();
+        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
+        player.deck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
+        player.discardPile.Clear();
     }
 
     #region Helpers
