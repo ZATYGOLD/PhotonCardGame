@@ -48,10 +48,10 @@ public class NetworkManager : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_ReceiveCharacterIndex(int charIndex)
+    public void RPC_ReceiveCharacterIndex(int charId)
     {
         PlayerManager local = PlayerManager.Local;
-        local.character = GameManager.Instance.characterDeck[charIndex];
+        local.character = CardManager.Instance.FindCardDataById(charId);
         local.Setup(PhotonNetwork.LocalPlayer);
     }
 

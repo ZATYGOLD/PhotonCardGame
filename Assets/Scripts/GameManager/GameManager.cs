@@ -88,18 +88,20 @@ public class GameManager : MonoBehaviourPun
     private void AssignCharacters()
     {
         if (!PhotonNetwork.IsMasterClient) return;
-        Shuffle(characterDeck);
 
-        List<int> list = Enumerable.Range(0, characterDeck.Count).ToList();
+        List<CardData> unused = new(characterDeck);
+        Shuffle(unused);
 
         //Assigns Random character to each player
         foreach (var player in PhotonNetwork.PlayerList)
         {
-            int index = UnityEngine.Random.Range(0, list.Count);
-            int charIndex = list[index];
-            list.RemoveAt(index);
+            if (player == null) continue;
+            int lastIndex = unused.Count - 1;
+            CardData chosenCharacter = unused[lastIndex];
+            unused.RemoveAt(lastIndex);
+            int charId = chosenCharacter.GetCardID();
 
-            photonView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charIndex);
+            photonView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charId);
         }
     }
 
