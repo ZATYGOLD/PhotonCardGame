@@ -7,9 +7,9 @@ using Photon.Realtime;
 
 
 [RequireComponent(typeof(PhotonView))]
-public class GameAPI : MonoBehaviourPun
+public class NetworkManager : MonoBehaviourPun
 {
-    public static GameAPI Instance { get; private set; }
+    public static NetworkManager Instance { get; private set; }
 
     void Awake()
     {

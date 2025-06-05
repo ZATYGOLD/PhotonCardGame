@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviourPun
             int charIndex = list[index];
             list.RemoveAt(index);
 
-            photonView.RPC(nameof(GameAPI.Instance.RPC_ReceiveCharacterIndex), player, charIndex);
+            photonView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charIndex);
         }
     }
 
@@ -107,9 +107,9 @@ public class GameManager : MonoBehaviourPun
     {
         if (!PhotonNetwork.IsMasterClient) return;
         Shuffle(mainDeck);
-        photonView.RPC(nameof(GameAPI.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
+        photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
         Shuffle(superVillainDeck);
-        photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
+        photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
     }
 
     private void SetLineUp()
@@ -138,7 +138,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
             );
 
-            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
@@ -160,7 +160,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
             );
 
-            photonView.RPC(nameof(GameAPI.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
