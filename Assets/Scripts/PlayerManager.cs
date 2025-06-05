@@ -14,7 +14,7 @@ public class PlayerManager : MonoBehaviourPun
     public Player Player { get; private set; }
     public int ActorNumber => photonView.OwnerActorNr;
     public bool IsLocal => photonView.IsMine;
-    private PhotonView NetworkManager;
+    private PhotonView NetworkManagerView;
 
     [Header("Card Prefabs")]
     [SerializeField] private GameObject characterCardPrefab;
@@ -61,7 +61,7 @@ public class PlayerManager : MonoBehaviourPun
             if (Local != null) { Destroy(gameObject); return; }
             Local = this;
             SetZoneEnums();
-            NetworkManager = global::NetworkManager.Instance.photonView;
+            NetworkManagerView = NetworkManager.Instance.photonView;
         }
     }
 
@@ -124,7 +124,7 @@ public class PlayerManager : MonoBehaviourPun
         PhotonNetwork.Instantiate(characterCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
             new object[] { cardId, photonView.ViewID });
 
-        NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncCharacters), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncCharacters), RpcTarget.OthersBuffered,
             photonView.ViewID, cardId);
     }
     #endregion
@@ -149,7 +149,7 @@ public class PlayerManager : MonoBehaviourPun
             PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
                 new object[] { card.GetCardID(), player.GetViewID() });
 
-            NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
         }
     }
 
@@ -161,14 +161,14 @@ public class PlayerManager : MonoBehaviourPun
         player.discardPile.Clear();
         global::NetworkManager.Instance.Shuffle(player.deck);
 
-        NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
     public void ShuffleDeck(PlayerManager player)
     {
         GameManager.Instance.Shuffle(player.deck);
-        NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
@@ -178,7 +178,7 @@ public class PlayerManager : MonoBehaviourPun
         if (!IsLocal) return;
         int[] cardIds = hand.Select(card => card.GetCardID()).ToArray();
 
-        NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncPlayerHand), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerHand), RpcTarget.OthersBuffered,
             photonView.ViewID, cardIds);
 
         hand.Clear();
@@ -197,7 +197,7 @@ public class PlayerManager : MonoBehaviourPun
         { Destroy(cardObject.gameObject); }
         discardPile.AddRange(playedCards);
 
-        NetworkManager.RPC(nameof(global::NetworkManager.Instance.RPC_SyncPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
             GetViewID(), CardManager.Instance.ConvertCardDataToIds(playedCards));
 
         playedCards.Clear();

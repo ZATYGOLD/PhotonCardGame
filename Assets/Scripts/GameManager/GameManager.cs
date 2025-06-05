@@ -8,6 +8,7 @@ using System;
 public class GameManager : MonoBehaviourPun
 {
     public static GameManager Instance { get; private set; }
+    private PhotonView NetworkManagerView;
     //private readonly CardManager CardManager = CardManager.Instance;
 
 
@@ -45,6 +46,7 @@ public class GameManager : MonoBehaviourPun
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        NetworkManagerView = NetworkManager.Instance.photonView;
     }
 
     private void Start()
@@ -101,7 +103,7 @@ public class GameManager : MonoBehaviourPun
             unused.RemoveAt(lastIndex);
             int charId = chosenCharacter.GetCardID();
 
-            photonView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charId);
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charId);
         }
     }
 
@@ -109,9 +111,9 @@ public class GameManager : MonoBehaviourPun
     {
         if (!PhotonNetwork.IsMasterClient) return;
         Shuffle(mainDeck);
-        photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
         Shuffle(superVillainDeck);
-        photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
     }
 
     private void SetLineUp()
@@ -140,7 +142,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
             );
 
-            photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
@@ -162,7 +164,7 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
             );
 
-            photonView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
 
@@ -193,10 +195,10 @@ public class GameManager : MonoBehaviourPun
         }
 
         Shuffle(playerActorNumbers);
-        photonView.RPC(nameof(NetworkManager.Instance.RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
 
         currentPlayerIndex = 0;
-        photonView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     // Move to the next player
@@ -206,7 +208,7 @@ public class GameManager : MonoBehaviourPun
         currentPlayerIndex = (currentPlayerIndex + 1) % playerActorNumbers.Count;
         Debug.Log($"Next player ActorNumber: {playerActorNumbers[currentPlayerIndex]}");
 
-        photonView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     public void RequestEndTurn(int actorNumber)
@@ -218,7 +220,7 @@ public class GameManager : MonoBehaviourPun
         else
         {
             Debug.Log("GameManager - RequestEndTurn - NotMasterClient |  playerActorNumber: " + actorNumber);
-            photonView.RPC(nameof(NetworkManager.Instance.RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
         }
     }
 

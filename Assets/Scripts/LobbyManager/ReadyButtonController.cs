@@ -131,6 +131,6 @@ public class ReadyButtonController : MonoBehaviour
     // Action for the MasterClient to start the game
     private void OnClickStartGame()
     {
-        PhotonNetwork.LoadLevel("GameScene");
+        PhotonNetwork.LoadLevel("MultiplayerScene");
     }
 }
