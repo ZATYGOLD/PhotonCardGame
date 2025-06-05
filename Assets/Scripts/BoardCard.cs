@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 public class BoardCard : Card, IPunInstantiateMagicCallback
 {
     private const int SpawnFlagIndex = 2;
+    private bool isSuperVillain;
     /// <summary>
     /// Called by Photon when the object is instantiated.
     /// Assigns the BoardCard to the shared lineUpCardsArea.
@@ -25,7 +26,7 @@ public class BoardCard : Card, IPunInstantiateMagicCallback
             return;
         }
 
-        bool isSuperVillain = (int)data[SpawnFlagIndex] == 1;
+        isSuperVillain = (int)data[SpawnFlagIndex] == 1;
 
         if (isSuperVillain)
         {
@@ -59,5 +60,14 @@ public class BoardCard : Card, IPunInstantiateMagicCallback
         if (!PlayerManager.Local.GetIsMyTurn()) return;
 
         MoveToDiscardPile();
+
+        if (isSuperVillain)
+        {
+            GameManager.Instance.DrawSuperVillaincard();
+        }
+        else
+        {
+            GameManager.Instance.DrawMainDeckCard();
+        }
     }
 }

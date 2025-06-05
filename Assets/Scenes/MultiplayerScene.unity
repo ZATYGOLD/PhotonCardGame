@@ -2716,6 +2716,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 01291b5af65e5744886256cadabb7510, type: 2}
   - {fileID: 11400000, guid: ac6c635273047134bbb05def14023e0e, type: 2}
   - {fileID: 11400000, guid: 8996e89093486084bb42dd0f6a5d0600, type: 2}
+  - {fileID: 11400000, guid: 99ce6486ba6ecfb4ea4f5ec7dbd6612c, type: 2}
+  - {fileID: 11400000, guid: 0c494800c85ded64eb14e93bc730c3b6, type: 2}
   playedCards: []
   lineUpCards: []
   superVillainCards: []
