@@ -1,26 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class HandCard : Card, IPunInstantiateMagicCallback
+public class HandCard : Card
 {
-    //private int ownerViewID;
+    private bool isHovering = false;
 
-    /// <summary>
-    /// Called by Photon when the object is instantiated.
-    /// </summary>
-    /// <param name="info">Instantiation data.</param>
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         base.OnPhotonInstantiate(info);
         AssignToOwnerArea();
     }
 
-    /// <summary>
-    /// Assigns the card to the owner's hand area based on ownerViewID.
-    /// </summary>
     private void AssignToOwnerArea()
     {
         PhotonView ownerPhotonView = PhotonView.Find(ownerViewID);
@@ -48,5 +39,21 @@ public class HandCard : Card, IPunInstantiateMagicCallback
         }
 
         MoveToPlayArea();
+    }
+
+    public override void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isHovering)
+        {
+            isHovering = true;
+        }
+    }
+
+    public override void OnPointerExit(PointerEventData eventData)
+    {
+        if (isHovering)
+        {
+            isHovering = false;
+        }
     }
 }

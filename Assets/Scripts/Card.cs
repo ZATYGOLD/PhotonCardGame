@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler
+public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     //public CardData CardData { get; private set; }
     public CardData cardData;
@@ -235,4 +235,6 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     public virtual void OnDrag(PointerEventData eventData) { }
     public virtual void OnBeginDrag() { }
     public virtual void OnEndDrag(PointerEventData eventData) { }
+    public virtual void OnPointerEnter(PointerEventData eventData) { }
+    public virtual void OnPointerExit(PointerEventData eventData) { }
 }
