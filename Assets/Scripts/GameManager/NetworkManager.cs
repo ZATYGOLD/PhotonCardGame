@@ -110,6 +110,30 @@ public class NetworkManager : MonoBehaviourPun
         GameManager.Instance.playedCards.Clear();
     }
 
+    #region Turn Management
+    [PunRPC]
+    public void RPC_SetTurnOrder(int[] actorNumbers)
+    {
+        GameManager.Instance.playerActorNumbers = actorNumbers.ToList();
+        Debug.Log("Turn order received.");
+    }
+
+    [PunRPC]
+    public void RPC_StartTurn(int actorNumber)
+    {
+        GameManager.Instance.currentPlayerIndex = GameManager.Instance.playerActorNumbers.IndexOf(actorNumber);
+        Debug.Log($"Starting turn for player with ActorNumber: {actorNumber}");
+        bool isCurrentPlayer = PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
+        PlayerManager.Local.SetTurnActive(isCurrentPlayer);
+    }
+
+    [PunRPC]
+    public void RPC_RequestEndTurn(int actorNumber)
+    {
+        if (PhotonNetwork.IsMasterClient) { GameManager.Instance.ProcessEndTurn(actorNumber); }
+    }
+    #endregion
+
     #region Helpers
     public void Shuffle<T>(List<T> list)
     {

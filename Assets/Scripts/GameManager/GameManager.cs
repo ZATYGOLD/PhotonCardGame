@@ -193,26 +193,10 @@ public class GameManager : MonoBehaviourPun
         }
 
         Shuffle(playerActorNumbers);
-        photonView.RPC(nameof(RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
+        photonView.RPC(nameof(NetworkManager.Instance.RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
 
         currentPlayerIndex = 0;
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
-    }
-
-    [PunRPC]
-    private void RPC_SetTurnOrder(int[] actorNumbers)
-    {
-        playerActorNumbers = actorNumbers.ToList();
-        Debug.Log("Turn order received.");
-    }
-
-    [PunRPC]
-    public void RPC_StartTurn(int actorNumber)
-    {
-        currentPlayerIndex = playerActorNumbers.IndexOf(actorNumber);
-        Debug.Log($"Starting turn for player with ActorNumber: {actorNumber}");
-        bool isCurrentPlayer = PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
-        PlayerManager.Local.SetTurnActive(isCurrentPlayer);
+        photonView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     // Move to the next player
@@ -222,7 +206,7 @@ public class GameManager : MonoBehaviourPun
         currentPlayerIndex = (currentPlayerIndex + 1) % playerActorNumbers.Count;
         Debug.Log($"Next player ActorNumber: {playerActorNumbers[currentPlayerIndex]}");
 
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
+        photonView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     public void RequestEndTurn(int actorNumber)
@@ -234,17 +218,11 @@ public class GameManager : MonoBehaviourPun
         else
         {
             Debug.Log("GameManager - RequestEndTurn - NotMasterClient |  playerActorNumber: " + actorNumber);
-            photonView.RPC(nameof(RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
+            photonView.RPC(nameof(NetworkManager.Instance.RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
         }
     }
 
-    [PunRPC]
-    public void RPC_RequestEndTurn(int actorNumber)
-    {
-        if (PhotonNetwork.IsMasterClient) { ProcessEndTurn(actorNumber); }
-    }
-
-    private void ProcessEndTurn(int actorNumber)
+    public void ProcessEndTurn(int actorNumber)
     {
         if (actorNumber != playerActorNumbers[currentPlayerIndex]) return;
 
