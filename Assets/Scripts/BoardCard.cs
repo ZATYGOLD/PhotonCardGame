@@ -51,8 +51,7 @@ public class BoardCard : Card, IPunInstantiateMagicCallback
             return;
         }
 
-        cardTransform = parentTransform;
-        transform.SetParent(parentTransform, worldPositionStays: false);
+        transform.SetParent(parentTransform, false);
     }
 
     public override void OnPointerClick(PointerEventData eventData)

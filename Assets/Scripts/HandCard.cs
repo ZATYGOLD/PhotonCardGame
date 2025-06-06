@@ -19,8 +19,7 @@ public class HandCard : Card
     {
         if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
-            cardTransform = player.handTransform;
-            transform.SetParent(cardTransform, false);
+            transform.SetParent(player.handTransform, false);
         }
         else
         {
@@ -45,28 +44,22 @@ public class HandCard : Card
 
     public override void OnPointerEnter(PointerEventData eventData)
     {
-        if (!isHovering)
+        if (isHovering) return;
+        isHovering = true;
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
-            isHovering = true;
-            if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-            {
-                cardTransform = player.hoverTransform;
-                transform.SetParent(cardTransform, false);
-            }
-
+            transform.SetParent(player.hoverTransform, false);
         }
+
     }
 
     public override void OnPointerExit(PointerEventData eventData)
     {
-        if (isHovering)
+        if (!isHovering) return;
+        isHovering = false;
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
-            isHovering = false;
-            if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-            {
-                cardTransform = player.handTransform;
-                transform.SetParent(cardTransform, false);
-            }
+            transform.SetParent(player.handTransform, false);
         }
     }
 }
