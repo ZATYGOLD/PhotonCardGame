@@ -112,7 +112,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
         //List<CardData> cardDataList = new();
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform.parent == playerManager.handTransform)
         {
             playerManager.hand.Remove(cardData);
         }
