@@ -43,7 +43,6 @@ public class HandCard : Card
     public override void OnPointerClick(PointerEventData eventData)
     {
         if (PlayerManager.Local.GetIsMyTurn() == false) return;
-        // If currently hovered (under hoverTransform), cancel hover so we reparent under handTransform
         if (isHovering)
         {
             CancelHover();
@@ -61,8 +60,7 @@ public class HandCard : Card
 
     public override void OnPointerEnter(PointerEventData eventData)
     {
-        if (player == null) return;
-        if (cardTransform.parent != player.handTransform) return;
+        if (player == null || cardTransform.parent != player.handTransform) return;
         if (currentlyHovered != null && currentlyHovered != this)
         {
             currentlyHovered.CancelHover();
@@ -72,6 +70,40 @@ public class HandCard : Card
         isHovering = true;
         currentlyHovered = this;
 
+        CreatePlaceholder();
+    }
+
+    public override void OnPointerExit(PointerEventData eventData)
+    {
+        if (player == null || !isHovering) return;
+        if (cardTransform.parent != player.hoverTransform) return;
+        isHovering = false;
+
+        RestoreCardPosition();
+    }
+
+    private void CancelHover()
+    {
+        if (!isHovering) return;
+        isHovering = false;
+        currentlyHovered = null;
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+        {
+            // Only cancel if placeholder still exists under hand
+            if (placeholder != null && placeholder.transform.parent == player.handTransform)
+            {
+                // Reparent back to hand and destroy placeholder
+                Vector3 worldPos = cardTransform.position;
+                transform.SetParent(player.handTransform, worldPositionStays: false);
+                cardTransform.position = worldPos;
+                cardTransform.SetSiblingIndex(placeholderIndex);
+                Destroy(placeholder);
+            }
+        }
+    }
+
+    private void CreatePlaceholder()
+    {
         // 1) Determine this card's index in the hand
         placeholderIndex = cardTransform.GetSiblingIndex();
         // 2) Create placeholder GameObject to hold the slot
@@ -101,49 +133,16 @@ public class HandCard : Card
         // 4) Nudge up by half height
         float halfH = cardTransform.rect.height * 0.52f;
         cardTransform.localPosition += new Vector3(0f, halfH, 0f);
-
     }
 
-    public override void OnPointerExit(PointerEventData eventData)
+    private void RestoreCardPosition()
     {
-        if (player == null) return;
-        if (!isHovering) return;
-        isHovering = false;
-        // Only exit hover if currently under hoverTransform
-        if (cardTransform.parent != player.hoverTransform)
-            return;
-
-        // 1) Capture world position
         Vector3 worldPos = cardTransform.position;
-        // 2) Reparent card back under handTransform
         transform.SetParent(player.handTransform, worldPositionStays: false);
         cardTransform.position = worldPos;
-        // 3) Lower by half height
         float halfH = cardTransform.rect.height * 0.52f;
         cardTransform.localPosition -= new Vector3(0f, halfH, 0f);
-        // 4) Insert card at placeholder index
         cardTransform.SetSiblingIndex(placeholderIndex);
-        // 5) Destroy the placeholder
         Destroy(placeholder);
-    }
-
-    private void CancelHover()
-    {
-        if (!isHovering) return;
-        isHovering = false;
-        currentlyHovered = null;
-        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-        {
-            // Only cancel if placeholder still exists under hand
-            if (placeholder != null && placeholder.transform.parent == player.handTransform)
-            {
-                // Reparent back to hand and destroy placeholder
-                Vector3 worldPos = cardTransform.position;
-                transform.SetParent(player.handTransform, worldPositionStays: false);
-                cardTransform.position = worldPos;
-                cardTransform.SetSiblingIndex(placeholderIndex);
-                Destroy(placeholder);
-            }
-        }
     }
 }
