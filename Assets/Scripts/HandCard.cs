@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 public class HandCard : Card
 {
     PhotonView ownerPhotonView;
+    private static HandCard currentlyHovered;
     private bool isHovering = false;
 
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
@@ -42,24 +43,42 @@ public class HandCard : Card
         MoveToPlayArea();
     }
 
-    public override void OnPointerEnter(PointerEventData eventData)
-    {
-        if (isHovering) return;
-        isHovering = true;
-        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-        {
-            transform.SetParent(player.hoverTransform, false);
-        }
+    // public override void OnPointerEnter(PointerEventData eventData)
+    // {
+    //     if (currentlyHovered != null && currentlyHovered != this)
+    //     {
+    //         currentlyHovered.CancelHover();
+    //     }
 
-    }
+    //     if (isHovering) return;
+    //     isHovering = true;
+    //     currentlyHovered = this;
 
-    public override void OnPointerExit(PointerEventData eventData)
+    //     if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+    //     {
+    //         transform.SetParent(player.hoverTransform, false);
+    //     }
+
+    // }
+
+    // public override void OnPointerExit(PointerEventData eventData)
+    // {
+    //     if (!isHovering) return;
+    //     isHovering = false;
+
+    //     if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+    //     {
+    //         transform.SetParent(player.handTransform, false);
+    //     }
+    // }
+
+    private void CancelHover()
     {
         if (!isHovering) return;
         isHovering = false;
         if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
-            transform.SetParent(player.handTransform, false);
+            transform.SetParent(player.handTransform, worldPositionStays: false);
         }
     }
 }

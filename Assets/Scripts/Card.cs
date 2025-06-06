@@ -181,20 +181,20 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
         // Find the owner player's PhotonView and get their PlayerManager
         PhotonView targetView = PhotonView.Find(playerViewID);
-        if (!targetView.TryGetComponent<PlayerManager>(out var playerManager)) return;
+        if (!targetView.TryGetComponent<PlayerManager>(out var player)) return;
         if (!targetView.IsMine) return;
 
         List<CardData> cardDataList = new();
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform.parent == player.handTransform)
         {
-            cardDataList = playerManager.hand;
+            cardDataList = player.hand;
         }
-        else if (cardTransform == GameManager.Instance.lineUpCardsTransform)
+        else if (cardTransform.parent == GameManager.Instance.lineUpCardsTransform)
         {
             cardDataList = GameManager.Instance.lineUpCards;
         }
-        else if (cardTransform == GameManager.Instance.superVillainCardsTransform)
+        else if (cardTransform.parent == GameManager.Instance.superVillainCardsTransform)
         {
             cardDataList = GameManager.Instance.superVillainCards;
         }
@@ -204,11 +204,11 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         }
 
         cardDataList.Remove(cardData);
-        playerManager.discardPile.Add(cardData);
+        player.discardPile.Add(cardData);
 
         photonView.RPC(nameof(RPC_MoveToDiscardPile), RpcTarget.OthersBuffered,
             playerViewID, cardData.GetCardID(), cardManager.ConvertCardDataToIds(cardDataList),
-            cardManager.ConvertCardDataToIds(playerManager.discardPile));
+            cardManager.ConvertCardDataToIds(player.discardPile));
 
         Destroy(gameObject);
     }
