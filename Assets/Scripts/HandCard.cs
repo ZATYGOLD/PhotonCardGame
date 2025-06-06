@@ -4,25 +4,27 @@ using UnityEngine.EventSystems;
 
 public class HandCard : Card
 {
+    PhotonView ownerPhotonView;
     private bool isHovering = false;
 
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         base.OnPhotonInstantiate(info);
+        ownerPhotonView = PhotonView.Find(playerViewID);
+        if (ownerPhotonView == null) return;
         AssignToOwnerArea();
     }
 
     private void AssignToOwnerArea()
     {
-        PhotonView ownerPhotonView = PhotonView.Find(ownerViewID);
-        if (ownerPhotonView != null && ownerPhotonView.TryGetComponent(out PlayerManager ownerPlayer))
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
-            cardTransform = ownerPlayer.handTransform;
+            cardTransform = player.handTransform;
             transform.SetParent(cardTransform, false);
         }
         else
         {
-            Debug.LogError($"PlayerManager with PhotonView ID {ownerViewID} not found.");
+            Debug.LogError($"PlayerManager with PhotonView ID {playerViewID} not found.");
             // Optionally, handle default positioning or destroy the card to prevent orphaned objects
             Destroy(gameObject);
         }
@@ -46,6 +48,12 @@ public class HandCard : Card
         if (!isHovering)
         {
             isHovering = true;
+            if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+            {
+                cardTransform = player.hoverTransform;
+                transform.SetParent(cardTransform, false);
+            }
+
         }
     }
 
@@ -54,6 +62,11 @@ public class HandCard : Card
         if (isHovering)
         {
             isHovering = false;
+            if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+            {
+                cardTransform = player.handTransform;
+                transform.SetParent(cardTransform, false);
+            }
         }
     }
 }

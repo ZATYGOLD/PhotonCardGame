@@ -39,6 +39,7 @@ public class PlayerManager : MonoBehaviourPun
     public RectTransform characterTransform;
     public RectTransform handTransform;
     public RectTransform locationTransform;
+    public RectTransform hoverTransform;
 
     [Header("Turn Timer")]
     private readonly float turnDuration = 50f;
