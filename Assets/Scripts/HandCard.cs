@@ -43,34 +43,42 @@ public class HandCard : Card
         MoveToPlayArea();
     }
 
-    // public override void OnPointerEnter(PointerEventData eventData)
-    // {
-    //     if (currentlyHovered != null && currentlyHovered != this)
-    //     {
-    //         currentlyHovered.CancelHover();
-    //     }
+    public override void OnPointerEnter(PointerEventData eventData)
+    {
+        if (currentlyHovered != null && currentlyHovered != this)
+        {
+            currentlyHovered.CancelHover();
+        }
 
-    //     if (isHovering) return;
-    //     isHovering = true;
-    //     currentlyHovered = this;
+        if (isHovering) return;
+        isHovering = true;
+        currentlyHovered = this;
 
-    //     if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-    //     {
-    //         transform.SetParent(player.hoverTransform, false);
-    //     }
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+        {
+            var pos = cardTransform.position;
+            transform.SetParent(player.hoverTransform, true);
+            cardTransform.position = pos;
+            float halfH = cardTransform.rect.height * 0.52f;
+            cardTransform.localPosition += new Vector3(0f, halfH, 0f);
+        }
 
-    // }
+    }
 
-    // public override void OnPointerExit(PointerEventData eventData)
-    // {
-    //     if (!isHovering) return;
-    //     isHovering = false;
+    public override void OnPointerExit(PointerEventData eventData)
+    {
+        if (!isHovering) return;
+        isHovering = false;
 
-    //     if (ownerPhotonView.TryGetComponent(out PlayerManager player))
-    //     {
-    //         transform.SetParent(player.handTransform, false);
-    //     }
-    // }
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+        {
+            var pos = cardTransform.position;
+            transform.SetParent(player.handTransform, true);
+            cardTransform.position = pos;
+            float halfH = cardTransform.rect.height * 0.52f;
+            cardTransform.localPosition -= new Vector3(0f, halfH, 0f);
+        }
+    }
 
     private void CancelHover()
     {
