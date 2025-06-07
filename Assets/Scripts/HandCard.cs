@@ -7,10 +7,6 @@ public class HandCard : Card
 {
     PhotonView ownerPhotonView;
     private PlayerManager player;
-    private static HandCard currentlyHovered;
-    private bool isHovering = false;
-    private GameObject placeholder;
-    private int placeholderIndex;
 
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
     {
@@ -45,7 +41,7 @@ public class HandCard : Card
         if (PlayerManager.Local.GetIsMyTurn() == false) return;
         if (isHovering)
         {
-            CancelHover();
+            EndHover();
         }
 
 
@@ -63,7 +59,7 @@ public class HandCard : Card
         if (player == null || cardTransform.parent != player.handTransform) return;
         if (currentlyHovered != null && currentlyHovered != this)
         {
-            currentlyHovered.CancelHover();
+            currentlyHovered.EndHover();
         }
 
         if (isHovering) return;
@@ -82,11 +78,9 @@ public class HandCard : Card
         RestoreCardPosition();
     }
 
-    private void CancelHover()
+    protected override void EndHover()
     {
-        if (!isHovering) return;
-        isHovering = false;
-        currentlyHovered = null;
+        base.EndHover();
         if (ownerPhotonView.TryGetComponent(out PlayerManager player))
         {
             // Only cancel if placeholder still exists under hand
@@ -94,7 +88,7 @@ public class HandCard : Card
             {
                 // Reparent back to hand and destroy placeholder
                 Vector3 worldPos = cardTransform.position;
-                transform.SetParent(player.handTransform, worldPositionStays: false);
+                transform.SetParent(player.handTransform, false);
                 cardTransform.position = worldPos;
                 cardTransform.SetSiblingIndex(placeholderIndex);
                 Destroy(placeholder);
@@ -102,43 +96,22 @@ public class HandCard : Card
         }
     }
 
-    private void CreatePlaceholder()
+    protected override void CreatePlaceholder()
     {
-        // 1) Determine this card's index in the hand
-        placeholderIndex = cardTransform.GetSiblingIndex();
-        // 2) Create placeholder GameObject to hold the slot
-        placeholder = new GameObject("CardPlaceholder", typeof(RectTransform));
-        // Ensure placeholder’s RectTransform matches the card’s size
-        RectTransform phRect = placeholder.GetComponent<RectTransform>();
-        phRect.sizeDelta = cardTransform.sizeDelta;
-        // Copy LayoutElement from this card so layout size matches
-        var cardLE = GetComponent<LayoutElement>();
-        var phLE = placeholder.AddComponent<LayoutElement>();
-        phLE.minWidth = cardLE.minWidth;
-        phLE.minHeight = cardLE.minHeight;
-        phLE.preferredWidth = cardLE.preferredWidth;
-        phLE.preferredHeight = cardLE.preferredHeight;
-        phLE.flexibleWidth = cardLE.flexibleWidth;
-        phLE.flexibleHeight = cardLE.flexibleHeight;
-        phLE.layoutPriority = cardLE.layoutPriority;
-        // Parent placeholder into hand at the same index
+        base.CreatePlaceholder();
         placeholder.transform.SetParent(player.handTransform, false);
         placeholder.transform.SetSiblingIndex(placeholderIndex);
-        phRect.localPosition = Vector3.zero;
 
-        // 3) Reparent card into hoverTransform
-        Vector3 worldPos = cardTransform.position;
-        transform.SetParent(player.hoverTransform, worldPositionStays: false);
+        transform.SetParent(player.hoverTransform, false);
         cardTransform.position = worldPos;
-        // 4) Nudge up by half height
+
         float halfH = cardTransform.rect.height * 0.52f;
         cardTransform.localPosition += new Vector3(0f, halfH, 0f);
     }
 
     private void RestoreCardPosition()
     {
-        Vector3 worldPos = cardTransform.position;
-        transform.SetParent(player.handTransform, worldPositionStays: false);
+        transform.SetParent(player.handTransform, false);
         cardTransform.position = worldPos;
         float halfH = cardTransform.rect.height * 0.52f;
         cardTransform.localPosition -= new Vector3(0f, halfH, 0f);

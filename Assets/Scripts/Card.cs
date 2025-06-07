@@ -9,7 +9,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(PhotonView))]
 public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    //public CardData CardData { get; private set; }
+    private CardManager cardManager;
+
     public CardData cardData;
     public Image image;
 
@@ -23,7 +24,12 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected RectTransform cardTransform;
     protected int playerViewID;
-    private CardManager cardManager;
+    protected bool isHovering = false;
+    protected static HandCard currentlyHovered;
+    protected GameObject placeholder;
+    protected int placeholderIndex;
+    protected Vector3 worldPos;
+
 
 
     protected virtual void Awake()
@@ -231,6 +237,40 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         if (removeIndex >= 0) GameManager.Instance.superVillainCards.RemoveAt(removeIndex);
 
         Destroy(gameObject);
+    }
+
+    protected virtual void BeginHover()
+    {
+        if (isHovering) return;
+        isHovering = true;
+    }
+
+    protected virtual void EndHover()
+    {
+        if (!isHovering) return;
+        isHovering = false;
+        currentlyHovered = null;
+    }
+
+    protected virtual void CreatePlaceholder()
+    {
+        worldPos = cardTransform.position;
+        placeholderIndex = cardTransform.GetSiblingIndex();
+
+        placeholder = new GameObject("CardPlaceholder", typeof(RectTransform));
+        var cardLE = GetComponent<LayoutElement>();
+        var phLE = placeholder.AddComponent<LayoutElement>();
+        phLE.minWidth = cardLE.minWidth;
+        phLE.minHeight = cardLE.minHeight;
+        phLE.preferredWidth = cardLE.preferredWidth;
+        phLE.preferredHeight = cardLE.preferredHeight;
+        phLE.flexibleWidth = cardLE.flexibleWidth;
+        phLE.flexibleHeight = cardLE.flexibleHeight;
+        phLE.layoutPriority = cardLE.layoutPriority;
+
+        RectTransform phRect = placeholder.GetComponent<RectTransform>();
+        phRect.sizeDelta = cardTransform.sizeDelta;
+        phRect.localPosition = Vector3.zero;
     }
 
     public virtual void OnPointerClick(PointerEventData eventData) { }
