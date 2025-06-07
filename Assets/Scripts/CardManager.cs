@@ -14,7 +14,7 @@ public class CardManager : MonoBehaviourPun
     #region Prefabs
     [Header("Card Prefabs")]
     public GameObject handCardPrefab;
-    public GameObject boardCardPrefab;
+    // public GameObject boardCardPrefab;
     #endregion
 
     #region Events
@@ -26,7 +26,6 @@ public class CardManager : MonoBehaviourPun
     #region Fields
     // Dictionaries to store game-specific decks and their destinations
     public static readonly Dictionary<int, CardData> CARD_LIST = new();
-    private static readonly System.Random _rng = new();
     #endregion
 
     private void Awake()
@@ -42,117 +41,7 @@ public class CardManager : MonoBehaviourPun
         LoadAllCardData();
     }
 
-    #region Deck Operations
-
-    public void ShufflePlayerDeck(PlayerManager playerManager)
-    {
-        if (playerManager == null) return;
-
-        Shuffle(playerManager.deck);
-        OnDeckShuffled?.Invoke(playerManager.deck);
-        int[] cardIds = playerManager.deck.Select(card => card.GetCardID()).ToArray();
-
-        photonView.RPC(nameof(RPC_ShufflePlayerDeck), RpcTarget.OthersBuffered,
-            playerManager.GetViewID(), cardIds);
-    }
-
-    [PunRPC]
-    public void RPC_ShufflePlayerDeck(int playerViewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
-        List<CardData> newDeck = cardIds.Select(cardId => FindCardDataById(cardId)).ToList();
-        playerManager.deck = newDeck;
-        OnDeckShuffled?.Invoke(newDeck);
-    }
-
-    #endregion
-
-    #region Game-Specific Deck Management
-
-    private void DrawOntoBoard(List<CardData> source, List<CardData> destination, int count,
-        int zone, Action<CardData> onDrawCard, string rpcName)
-    {
-        if (!PhotonNetwork.IsMasterClient) return;
-        if (source == null || source.Count <= 0) return;
-        for (int i = 0; i < count; i++)
-        {
-            CardData card = PopTopCard(source);
-            destination.Add(card);
-            InstantiateBoardCard(card, zone);
-            onDrawCard?.Invoke(card);
-            photonView.RPC(rpcName, RpcTarget.OthersBuffered, card.GetCardID());
-        }
-    }
-
-    public void DrawFromMainDeckToLineUp(int count)
-    {
-        DrawOntoBoard(GameManager.Instance.mainDeck, GameManager.Instance.lineUpCards,
-            count, 0, OnLineUpCardDrawn, nameof(RPC_DrawFromMainDeck));
-    }
-
-    [PunRPC]
-    public void RPC_DrawFromMainDeck(int cardId)
-    {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
-        gm.lineUpCards.Add(FindCardDataById(cardId));
-    }
-
-    public void DrawFromSuperVillainDeckToLineUp(int count)
-    {
-        DrawOntoBoard(GameManager.Instance.superVillainDeck, GameManager.Instance.superVillainCards,
-            count, 1, OnSuperVillainCardDrawn, nameof(RPC_DrawFromVillainDeck));
-    }
-
-    [PunRPC]
-    public void RPC_DrawFromVillainDeck(int cardId)
-    {
-        GameManager gm = GameManager.Instance;
-        int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
-        gm.superVillainCards.Add(FindCardDataById(cardId));
-    }
-
-    public void InitializeDecks()
-    {
-        ShuffleDeck(GameManager.Instance.mainDeck, OnDeckShuffled, nameof(RPC_ShuffleGameDeck));
-        ShuffleDeck(GameManager.Instance.characterDeck, OnDeckShuffled, nameof(RPC_ShuffleCharacterDeck));
-        ShuffleDeck(GameManager.Instance.superVillainDeck, OnDeckShuffled, nameof(RPC_ShuffleSuperVillainDeck));
-    }
-
-    private void ShuffleDeck(List<CardData> deck, Action<List<CardData>> action, string rpcName)
-    {
-        if (!PhotonNetwork.IsMasterClient || deck == null || deck.Count == 0) return;
-        Shuffle(deck);
-
-        action?.Invoke(deck);
-
-        int[] cardIds = ConvertCardDataToIds(deck);
-        photonView.RPC(rpcName, RpcTarget.OthersBuffered, cardIds);
-    }
-
-    [PunRPC]
-    public void RPC_ShuffleGameDeck(int[] cardIds)
-    {
-        GameManager.Instance.mainDeck = ConvertCardIdsToCardData(cardIds);
-    }
-
-    [PunRPC]
-    public void RPC_ShuffleCharacterDeck(int[] cardIds)
-    {
-        GameManager.Instance.characterDeck = ConvertCardIdsToCardData(cardIds);
-    }
-
-    [PunRPC]
-    public void RPC_ShuffleSuperVillainDeck(int[] cardIds)
-    {
-        GameManager.Instance.superVillainDeck = ConvertCardIdsToCardData(cardIds);
-    }
-
-    #endregion
-
-    #region Helper Functions
+    #region Card Specific
 
     public CardData PopTopCard(List<CardData> deck)
     {
@@ -165,42 +54,11 @@ public class CardManager : MonoBehaviourPun
             new object[] { data.GetCardID(), ownerViewID });
     }
 
-    public void InstantiateBoardCard(CardData data, int zoneIndex)
-    {
-        PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-            new object[] { data.GetCardID(), -1, zoneIndex });
-    }
-
-    public void ReshufflePlayerDiscardPileToDeck(PlayerManager playerManager)
-    {
-        if (playerManager.discardPile.Count == 0) return;
-
-        playerManager.deck.AddRange(playerManager.discardPile);
-        playerManager.discardPile.Clear();
-        Shuffle(playerManager.deck);
-
-        photonView.RPC(nameof(RPC_ReshufflePlayerDiscardPileToDeck), RpcTarget.OthersBuffered,
-            playerManager.GetViewID(), ConvertCardDataToIds(playerManager.deck));
-    }
-
-    [PunRPC]
-    public void RPC_ReshufflePlayerDiscardPileToDeck(int playerViewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
-
-        playerManager.deck = ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile.Clear();
-    }
-
-    private void Shuffle(List<CardData> deck)
-    {
-        int n = deck.Count;
-        while (n > 1)
-        {
-            int k = _rng.Next(n--);
-            (deck[k], deck[n]) = (deck[n], deck[k]);
-        }
-    }
+    // public void InstantiateBoardCard(CardData data, int zoneIndex)
+    // {
+    //     PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+    //         new object[] { data.GetCardID(), -1, zoneIndex });
+    // }
 
     public int[] ConvertCardDataToIds(List<CardData> cardDataList)
     {

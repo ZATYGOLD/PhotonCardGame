@@ -107,6 +107,18 @@ MonoBehaviour:
   - RPC_SetCharacter
   - RPC_DrawLineupCard
   - RPC_SyncDrawnCard
+  - RPC_AddDiscardPileToDeck
+  - RPC_SyncMainDeckAndLineUp
+  - RPC_PlayerDraw
+  - RPC_SyncSuperVillainDeck
+  - RPC_SyncMainDeck
+  - RPC_SyncLineUp
+  - RPC_SyncPlayerDeck
+  - RPC_SyncSuperVillain
+  - RPC_SyncDiscardPileToDeck
+  - RPC_SyncPlayedCardsToDiscardPile
+  - RPC_SyncPlayerDraw
+  - RPC_SyncPlayerHand
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
