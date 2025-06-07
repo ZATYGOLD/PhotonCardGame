@@ -14,6 +14,7 @@ public class PlayerManager : MonoBehaviourPun
     public Player Player { get; private set; }
     public int ActorNumber => photonView.OwnerActorNr;
     public bool IsLocal => photonView.IsMine;
+    private PhotonView NetworkManagerView;
 
     [Header("Card Prefabs")]
     [SerializeField] private GameObject characterCardPrefab;
@@ -38,6 +39,7 @@ public class PlayerManager : MonoBehaviourPun
     public RectTransform characterTransform;
     public RectTransform handTransform;
     public RectTransform locationTransform;
+    public RectTransform hoverTransform;
 
     [Header("Turn Timer")]
     private readonly float turnDuration = 50f;
@@ -60,6 +62,7 @@ public class PlayerManager : MonoBehaviourPun
             if (Local != null) { Destroy(gameObject); return; }
             Local = this;
             SetZoneEnums();
+            NetworkManagerView = NetworkManager.Instance.photonView;
         }
     }
 
@@ -105,8 +108,8 @@ public class PlayerManager : MonoBehaviourPun
         deck = GameManager.Instance.playerDeck;
 
         InstantiateCharacter();
-        CardManager.Instance.ShufflePlayerDeck(this);
-        DrawCards(5);
+        ShuffleDeck(this);
+        DrawCard(this, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
@@ -122,104 +125,86 @@ public class PlayerManager : MonoBehaviourPun
         PhotonNetwork.Instantiate(characterCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
             new object[] { cardId, photonView.ViewID });
 
-        photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncCharacters), RpcTarget.OthersBuffered,
             photonView.ViewID, cardId);
-    }
-
-    [PunRPC]
-    public void RPC_SyncCharacters(int ownerViewID, int cardId)
-    {
-        if (!PLAYERS.TryGetValue(ownerViewID, out var playerManager)) return;
-        playerManager.character = CardManager.Instance.FindCardDataById(cardId);
     }
     #endregion
 
-    #region Deck Interactions
-    public void DrawCards(int count)
+    public void DrawCard(PlayerManager player, int count = 1)
     {
-        if (!IsLocal) return;
+        var sourceList = player.deck;
+        var destinationList = player.hand;
+
         for (int i = 0; i < count; i++)
         {
-            if (deck.Count == 0) CardManager.Instance.ReshufflePlayerDiscardPileToDeck(this);
-            if (deck.Count == 0) break;
+            if (sourceList.Count <= 0)
+            {
+                AddDiscardPileToDeck(player);
+                if (sourceList.Count == 0) return;
+            }
 
-            CardData card = CardManager.Instance.PopTopCard(deck);
-            hand.Add(card);
+            CardData card = sourceList[0];
+            sourceList.RemoveAt(0);
+            destinationList.Add(card);
 
-            CardManager.Instance.InstantiateHandCard(card, photonView.ViewID);
-            OnCardDrawn?.Invoke(card);
+            PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), player.GetViewID() });
 
-            photonView.RPC(nameof(RPC_OnPlayerDraw), RpcTarget.OthersBuffered,
-                photonView.ViewID, card.GetCardID());
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
         }
     }
 
-    [PunRPC]
-    public void RPC_OnPlayerDraw(int viewID, int cardId)
+    public void AddDiscardPileToDeck(PlayerManager player)
     {
-        if (!PLAYERS.TryGetValue(viewID, out var playerManager)) return;
-        int index = playerManager.deck.FindIndex(card => card.GetCardID() == cardId);
-        if (index >= 0) playerManager.deck.RemoveAt(index);
+        if (player.discardPile.Count == 0) return;
 
-        CardData card = CardManager.Instance.FindCardDataById(cardId);
-        playerManager.hand.Add(card);
-        // TODO: Instantiate visual for other players' hands once UI container is ready
-        //InstantiateHandCard(card, playerViewID); //Reminder: enable when hand area exists
-        //OnPlayerCardDrawn?.Invoke(cardData, playerManager);
+        player.deck.AddRange(player.discardPile);
+        player.discardPile.Clear();
+        global::NetworkManager.Instance.Shuffle(player.deck);
+
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
+            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
-    #endregion
+
+    public void ShuffleDeck(PlayerManager player)
+    {
+        GameManager.Instance.Shuffle(player.deck);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
+            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
+    }
 
     #region Card Interactions
     public void DiscardAllHand()
     {
         if (!IsLocal) return;
         int[] cardIds = hand.Select(card => card.GetCardID()).ToArray();
-        photonView.RPC(nameof(RPC_SyncDiscardHand), RpcTarget.OthersBuffered,
+
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerHand), RpcTarget.OthersBuffered,
             photonView.ViewID, cardIds);
+
         hand.Clear();
         DestroyZoneVisual(CardZone.Hand);
         discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(cardIds));
         RefreshCounters();
     }
 
-    [PunRPC]
-    public void RPC_SyncDiscardHand(int viewID, int[] ids)
-    {
-        if (!PLAYERS.TryGetValue(viewID, out var playerManager)) return;
-        playerManager.discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(ids));
-        playerManager.hand.Clear();
-    }
-
     public void SendPlayedCardsToDiscardPile()
     {
         if (!photonView.IsMine) return;
         List<CardData> playedCards = GameManager.Instance.playedCards;
-
         if (playedCards == null || playedCards.Count <= 0) return;
 
         foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
         { Destroy(cardObject.gameObject); }
-
         discardPile.AddRange(playedCards);
 
-        photonView.RPC(nameof(RPC_SendPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
             GetViewID(), CardManager.Instance.ConvertCardDataToIds(playedCards));
 
         playedCards.Clear();
     }
 
-    [PunRPC]
-    public void RPC_SendPlayedCardsToDiscardPile(int playerViewID, int[] cardIds)
-    {
-        if (!PLAYERS.TryGetValue(playerViewID, out var playerManager)) return;
 
-        foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
-        { Destroy(cardObject.gameObject); }
-
-        List<CardData> playedCards = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile.AddRange(playedCards);
-        GameManager.Instance.playedCards.Clear();
-    }
     #endregion
 
     #region Player Lookup
@@ -302,7 +287,7 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        DrawCards(5);
+        DrawCard(this, 5);
     }
     #endregion
 

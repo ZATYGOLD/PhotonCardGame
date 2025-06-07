@@ -24,7 +24,7 @@ public class CharacterCard : Card, IPunInstantiateMagicCallback
     /// <param name="parentTransform">The RectTransform of the target area.</param>
     private void AssignToArea()
     {
-        PhotonView ownerPhotonView = PhotonView.Find(ownerViewID);
+        PhotonView ownerPhotonView = PhotonView.Find(playerViewID);
         if (ownerPhotonView != null && ownerPhotonView.TryGetComponent(out PlayerManager ownerPlayer))
         {
             cardTransform = ownerPlayer.characterTransform;
@@ -32,7 +32,7 @@ public class CharacterCard : Card, IPunInstantiateMagicCallback
         }
         else
         {
-            Debug.LogError($"PlayerManager with PhotonView ID {ownerViewID} not found.");
+            Debug.LogError($"PlayerManager with PhotonView ID {playerViewID} not found.");
             Destroy(gameObject); // Optionally, handle default positioning or destroy the card to prevent orphaned objects
         }
     }

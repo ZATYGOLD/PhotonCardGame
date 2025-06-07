@@ -8,11 +8,13 @@ using System;
 public class GameManager : MonoBehaviourPun
 {
     public static GameManager Instance { get; private set; }
+    private PhotonView NetworkManagerView;
     //private readonly CardManager CardManager = CardManager.Instance;
 
 
     [Header("Prefabs")]
     [SerializeField] private GameObject playerPrefab;
+    [SerializeField] private GameObject boardCardPrefab;
 
     public int power = 0;
 
@@ -44,6 +46,7 @@ public class GameManager : MonoBehaviourPun
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        NetworkManagerView = NetworkManager.Instance.photonView;
     }
 
     private void Start()
@@ -55,7 +58,7 @@ public class GameManager : MonoBehaviourPun
         if (PhotonNetwork.IsMasterClient)
         {
             AssignCharacters();
-            CardManager.Instance.InitializeDecks();
+            InitializeDecks();
             SetLineUp();
             SetupTurnOrder();
         }
@@ -88,34 +91,98 @@ public class GameManager : MonoBehaviourPun
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
-        List<int> list = Enumerable.Range(0, characterDeck.Count).ToList();
+        List<CardData> unused = new(characterDeck);
+        Shuffle(unused);
 
         //Assigns Random character to each player
         foreach (var player in PhotonNetwork.PlayerList)
         {
-            int index = UnityEngine.Random.Range(0, list.Count);
-            int charIndex = list[index];
-            list.RemoveAt(index);
+            if (player == null) continue;
+            int lastIndex = unused.Count - 1;
+            CardData chosenCharacter = unused[lastIndex];
+            unused.RemoveAt(lastIndex);
+            int charId = chosenCharacter.GetCardID();
 
-            photonView.RPC(nameof(RPC_ReceiveCharacterIndex), player, charIndex);
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charId);
         }
     }
 
-    [PunRPC]
-    void RPC_ReceiveCharacterIndex(int charIndex)
+    private void InitializeDecks()
     {
-        PlayerManager local = PlayerManager.Local;
-        local.character = characterDeck[charIndex];
-        local.Setup(PhotonNetwork.LocalPlayer);
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(mainDeck);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
+        Shuffle(superVillainDeck);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
     }
 
     private void SetLineUp()
     {
-        GameLogic.Instance.DrawCard(mainDeck, lineUpCards, 5);
+        if (!PhotonNetwork.IsMasterClient) return;
+        DrawMainDeckCard(5);
+        DrawSuperVillaincard();
+        ManagePower(PowerOperation.Reset);
+    }
 
-        //CardManager.Instance.DrawFromMainDeckToLineUp(5); //TODO: Change number to variable, set in game config
-        CardManager.Instance.DrawFromSuperVillainDeckToLineUp(1); //TODO: Change number to variable, set in game config
-        GameLogic.Instance.ManagePower(PowerOperation.Reset);
+    public void DrawMainDeckCard(int count = 1)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (mainDeck.Count <= 0)
+            {
+                Shuffle(mainDeck);
+                if (mainDeck.Count == 0) return;
+            }
+
+            CardData card = mainDeck[0];
+            mainDeck.RemoveAt(0);
+            lineUpCards.Add(card);
+
+            PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
+            );
+
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+        }
+    }
+
+    public void DrawSuperVillaincard(int count = 1)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (superVillainDeck.Count <= 0)
+            {
+                Shuffle(superVillainDeck);
+                if (superVillainDeck.Count == 0) return;
+            }
+
+            CardData card = superVillainDeck[0];
+            superVillainDeck.RemoveAt(0);
+            superVillainCards.Add(card);
+
+            PhotonNetwork.Instantiate(boardCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
+            );
+
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
+        }
+    }
+
+    public void ManagePower(PowerOperation operation, int amount = 0, CardData cardData = null)
+    {
+        switch (operation)
+        {
+            case PowerOperation.Add:
+                power += amount;
+                break;
+            case PowerOperation.Subtract:
+                if (cardData != null) power -= cardData.GetCardCost();
+                else if (cardData == null) power -= amount;
+                break;
+            case PowerOperation.Reset:
+                power = 0;
+                break;
+        }
     }
 
     #region Turn Setup
@@ -128,26 +195,10 @@ public class GameManager : MonoBehaviourPun
         }
 
         Shuffle(playerActorNumbers);
-        photonView.RPC(nameof(RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
 
         currentPlayerIndex = 0;
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
-    }
-
-    [PunRPC]
-    private void RPC_SetTurnOrder(int[] actorNumbers)
-    {
-        playerActorNumbers = actorNumbers.ToList();
-        Debug.Log("Turn order received.");
-    }
-
-    [PunRPC]
-    public void RPC_StartTurn(int actorNumber)
-    {
-        currentPlayerIndex = playerActorNumbers.IndexOf(actorNumber);
-        Debug.Log($"Starting turn for player with ActorNumber: {actorNumber}");
-        bool isCurrentPlayer = PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
-        PlayerManager.Local.SetTurnActive(isCurrentPlayer);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     // Move to the next player
@@ -157,7 +208,7 @@ public class GameManager : MonoBehaviourPun
         currentPlayerIndex = (currentPlayerIndex + 1) % playerActorNumbers.Count;
         Debug.Log($"Next player ActorNumber: {playerActorNumbers[currentPlayerIndex]}");
 
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
     }
 
     public void RequestEndTurn(int actorNumber)
@@ -169,17 +220,11 @@ public class GameManager : MonoBehaviourPun
         else
         {
             Debug.Log("GameManager - RequestEndTurn - NotMasterClient |  playerActorNumber: " + actorNumber);
-            photonView.RPC(nameof(RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
+            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
         }
     }
 
-    [PunRPC]
-    public void RPC_RequestEndTurn(int actorNumber)
-    {
-        if (PhotonNetwork.IsMasterClient) { ProcessEndTurn(actorNumber); }
-    }
-
-    private void ProcessEndTurn(int actorNumber)
+    public void ProcessEndTurn(int actorNumber)
     {
         if (actorNumber != playerActorNumbers[currentPlayerIndex]) return;
 
@@ -196,7 +241,7 @@ public class GameManager : MonoBehaviourPun
     #endregion
 
     #region Helper
-    private void Shuffle<T>(List<T> list)
+    public void Shuffle<T>(List<T> list)
     {
         var rand = new System.Random();
         for (int i = list.Count - 1; i > 0; i--)
@@ -209,5 +254,6 @@ public class GameManager : MonoBehaviourPun
 }
 
 #region Enums
+public enum Ownership { Unknown, Local, Remote, Shared }
 public enum PowerOperation { Add, Subtract, Reset }
 #endregion

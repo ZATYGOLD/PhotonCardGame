@@ -5,9 +5,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler
+[RequireComponent(typeof(LayoutElement))]
+[RequireComponent(typeof(PhotonView))]
+public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    //public CardData CardData { get; private set; }
+    private CardManager cardManager;
+
     public CardData cardData;
     public Image image;
 
@@ -20,8 +23,13 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [SerializeField] private TMP_Text value;
 
     protected RectTransform cardTransform;
-    protected int ownerViewID;
-    private CardManager cardManager;
+    protected int playerViewID;
+    protected bool isHovering = false;
+    protected static HandCard currentlyHovered;
+    protected GameObject placeholder;
+    protected int placeholderIndex;
+    protected Vector3 worldPos;
+
 
 
     protected virtual void Awake()
@@ -49,7 +57,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     {
         if (TryParseInstantiationData(info, out int cardID, out int ownerID))
         {
-            ownerViewID = ownerID;
+            playerViewID = ownerID;
             CardData data = cardManager.FindCardDataById(cardID);
             if (data != null)
             {
@@ -105,12 +113,12 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToPlayArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(ownerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
         if (transform.parent == GameManager.Instance.playedCardsTransform) return;
 
         //List<CardData> cardDataList = new();
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform.parent == playerManager.handTransform)
         {
             playerManager.hand.Remove(cardData);
         }
@@ -131,7 +139,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [PunRPC]
     public void RPC_MoveToPlayArea(int[] cardIds, int[] playedCards)
     {
-        if (!PlayerManager.TryGetRemotePlayer(ownerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
 
         playerManager.hand = cardManager.ConvertCardIdsToCardData(cardIds);
 
@@ -143,7 +151,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToLocationArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(ownerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
 
         if (transform.parent == playerManager.locationTransform) return;
 
@@ -156,7 +164,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         transform.SetParent(playerManager.locationTransform, false);
 
         photonView.RPC(nameof(RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
-            ownerViewID, cardManager.ConvertCardDataToIds(playerManager.hand),
+            playerViewID, cardManager.ConvertCardDataToIds(playerManager.hand),
             cardManager.ConvertCardDataToIds(playerManager.locationCards));
     }
 
@@ -171,28 +179,28 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToDiscardPile()
     {
-        if (ownerViewID < 0)
+        if (playerViewID < 0)
         {
-            ownerViewID = PlayerManager.Local.GetComponent<PhotonView>().ViewID;
-            Debug.Log("Set the ownerID: " + ownerViewID);
+            playerViewID = PlayerManager.Local.GetComponent<PhotonView>().ViewID;
+            Debug.Log("Set the ownerID: " + playerViewID);
         }
 
         // Find the owner player's PhotonView and get their PlayerManager
-        PhotonView targetView = PhotonView.Find(ownerViewID);
-        if (!targetView.TryGetComponent<PlayerManager>(out var playerManager)) return;
+        PhotonView targetView = PhotonView.Find(playerViewID);
+        if (!targetView.TryGetComponent<PlayerManager>(out var player)) return;
         if (!targetView.IsMine) return;
 
         List<CardData> cardDataList = new();
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform.parent == player.handTransform)
         {
-            cardDataList = playerManager.hand;
+            cardDataList = player.hand;
         }
-        else if (cardTransform == GameManager.Instance.lineUpCardsTransform)
+        else if (cardTransform.parent == GameManager.Instance.lineUpCardsTransform)
         {
             cardDataList = GameManager.Instance.lineUpCards;
         }
-        else if (cardTransform == GameManager.Instance.superVillainCardsTransform)
+        else if (cardTransform.parent == GameManager.Instance.superVillainCardsTransform)
         {
             cardDataList = GameManager.Instance.superVillainCards;
         }
@@ -202,11 +210,11 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         }
 
         cardDataList.Remove(cardData);
-        playerManager.discardPile.Add(cardData);
+        player.discardPile.Add(cardData);
 
         photonView.RPC(nameof(RPC_MoveToDiscardPile), RpcTarget.OthersBuffered,
-            ownerViewID, cardData.GetCardID(), cardManager.ConvertCardDataToIds(cardDataList),
-            cardManager.ConvertCardDataToIds(playerManager.discardPile));
+            playerViewID, cardData.GetCardID(), cardManager.ConvertCardDataToIds(cardDataList),
+            cardManager.ConvertCardDataToIds(player.discardPile));
 
         Destroy(gameObject);
     }
@@ -231,8 +239,44 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         Destroy(gameObject);
     }
 
+    protected virtual void BeginHover()
+    {
+        if (isHovering) return;
+        isHovering = true;
+    }
+
+    protected virtual void EndHover()
+    {
+        if (!isHovering) return;
+        isHovering = false;
+        currentlyHovered = null;
+    }
+
+    protected virtual void CreatePlaceholder()
+    {
+        worldPos = cardTransform.position;
+        placeholderIndex = cardTransform.GetSiblingIndex();
+
+        placeholder = new GameObject("CardPlaceholder", typeof(RectTransform));
+        var cardLE = GetComponent<LayoutElement>();
+        var phLE = placeholder.AddComponent<LayoutElement>();
+        phLE.minWidth = cardLE.minWidth;
+        phLE.minHeight = cardLE.minHeight;
+        phLE.preferredWidth = cardLE.preferredWidth;
+        phLE.preferredHeight = cardLE.preferredHeight;
+        phLE.flexibleWidth = cardLE.flexibleWidth;
+        phLE.flexibleHeight = cardLE.flexibleHeight;
+        phLE.layoutPriority = cardLE.layoutPriority;
+
+        RectTransform phRect = placeholder.GetComponent<RectTransform>();
+        phRect.sizeDelta = cardTransform.sizeDelta;
+        phRect.localPosition = Vector3.zero;
+    }
+
     public virtual void OnPointerClick(PointerEventData eventData) { }
     public virtual void OnDrag(PointerEventData eventData) { }
     public virtual void OnBeginDrag() { }
     public virtual void OnEndDrag(PointerEventData eventData) { }
+    public virtual void OnPointerEnter(PointerEventData eventData) { }
+    public virtual void OnPointerExit(PointerEventData eventData) { }
 }
