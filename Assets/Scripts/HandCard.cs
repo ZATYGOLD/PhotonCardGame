@@ -29,8 +29,8 @@ public class HandCard : Card
         {
             transform.SetParent(player.handTransform, false);
             halfH = cardTransform.rect.height * 0.5f;
-            Vector3 a = visualContainer.localPosition;
-            visualContainer.localPosition = new Vector3(a.x, a.y - halfH, a.z);
+            Vector3 a = visualContainer.anchoredPosition;
+            visualContainer.anchoredPosition = new Vector3(a.x, a.y - halfH, a.z);
         }
         else
         {
@@ -45,11 +45,13 @@ public class HandCard : Card
 
         if (cardData.GetCardType() == CardType.Location)
         {
+            //visualCanvas.sortingOrder = 0;
             MoveToLocationArea();
             return;
         }
-
-        MoveToPlayArea(); //TODO: Set default position of card back to (0,0,0) when moving the card and syncing with other players
+        Vector3 a = visualContainer.localPosition;
+        visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
+        MoveToPlayArea();
     }
 
     public override void OnPointerEnter(PointerEventData eventData)
@@ -59,6 +61,7 @@ public class HandCard : Card
         if (isHovering) return;
         isHovering = true;
 
+        //visualCanvas.sortingOrder = 2;
         Vector3 a = visualContainer.localPosition;
         visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
 
@@ -69,6 +72,7 @@ public class HandCard : Card
         if (player == null || !isHovering) return;
         isHovering = false;
 
+        //visualCanvas.sortingOrder = 1;
         Vector3 a = visualContainer.localPosition;
         visualContainer.localPosition = new Vector3(a.x, a.y - halfH, a.z);
     }

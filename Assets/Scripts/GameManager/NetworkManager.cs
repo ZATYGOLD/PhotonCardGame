@@ -4,6 +4,7 @@ using Photon.Pun;
 using System.Linq;
 using System;
 using Photon.Realtime;
+using UnityEngine.XR;
 
 
 [RequireComponent(typeof(PhotonView))]
@@ -121,6 +122,12 @@ public class NetworkManager : MonoBehaviourPun
         var cardView = PhotonView.Find(cardViewID);
         if (cardView == null) return;
 
+        if (cardView.TryGetComponent<Card>(out var cardComp))
+        {
+            cardComp.visualContainer.localPosition = Vector3.zero;
+        }
+
+        cardView.transform.localPosition = Vector3.zero;
         cardView.transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(card);
     }

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 using TMPro;
@@ -23,19 +24,23 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [Header("Value Text")]
     [SerializeField] private TMP_Text value;
 
-    [Header("Visual Offset Container")]
-    [SerializeField] protected RectTransform visualContainer;
+    [Header("RectTransforms")]
+    [SerializeField] public RectTransform visualContainer;
+    [SerializeField] protected RectTransform cardTransform;
 
-    protected RectTransform cardTransform;
+    // [Header("Canvas")]
+    // [SerializeField] protected Canvas visualCanvas;
+
     protected int playerViewID;
     protected bool isHovering = false;
+    protected int originalIndex;
 
 
     protected virtual void Awake()
     {
         cardManager = CardManager.Instance;
         NetworkManagerView = NetworkManager.Instance.photonView;
-        cardTransform = GetComponent<RectTransform>();
+        //visualCanvas.sortingOrder = 1;
     }
 
     private void Start()
@@ -123,6 +128,8 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(cardData);
 
+        StartCoroutine(DelayedResetPosition());
+
         NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMoveToPlayArea), RpcTarget.OthersBuffered,
             playerViewID, photonView.ViewID, cardData.GetCardID());
     }
@@ -190,6 +197,13 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
             if (zone.Value.container == parent) return zone.Key;
         }
         return CardZone.Unknown;
+    }
+
+    private IEnumerator DelayedResetPosition()
+    {
+        yield return null;
+        transform.localPosition = Vector3.zero;
+        visualContainer.localPosition = Vector3.zero;
     }
 
     public virtual void OnPointerClick(PointerEventData eventData) { }
