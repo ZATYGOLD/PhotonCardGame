@@ -126,7 +126,7 @@ public class NetworkManager : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_MoveToLocationArea(int playerViewID, int cardViewID, int cardId)
+    public void RPC_SyncMoveToLocationArea(int playerViewID, int cardViewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
@@ -138,6 +138,36 @@ public class NetworkManager : MonoBehaviourPun
 
         cardView.transform.SetParent(player.locationTransform);
         player.locationCards.Add(card);
+    }
+
+    [PunRPC]
+    public void RPC_SyncMoveToDiscardPile(int playerViewID, int cardViewID, int cardId, int zone)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
+
+        var card = CardManager.Instance.FindCardDataById(cardId);
+
+        switch ((CardZone)zone)
+        {
+            case CardZone.Hand:
+                player.hand.Remove(card);
+                break;
+            case CardZone.Lineup:
+                GameManager.Instance.lineUpCards.Remove(card);
+                break;
+            case CardZone.SuperVillain:
+                GameManager.Instance.superVillainCards.Remove(card);
+                break;
+            // add other zones if needed…
+            default:
+                return;
+        }
+
+        var cardView = PhotonView.Find(cardViewID);
+        if (cardView == null) return;
+
+        player.discardPile.Add(card);
+        Destroy(cardView.gameObject);
     }
 
     #region Turn Management

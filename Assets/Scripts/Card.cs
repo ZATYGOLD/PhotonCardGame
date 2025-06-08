@@ -140,7 +140,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         player.locationCards.Add(cardData);
         transform.SetParent(player.locationTransform, false);
 
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMoveToLocationArea), RpcTarget.OthersBuffered,
             playerViewID, photonView.ViewID, cardData.GetCardID());
     }
 
@@ -152,58 +152,44 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
             Debug.Log("Set the ownerID: " + playerViewID);
         }
 
-        // Find the owner player's PhotonView and get their PlayerManager
-        PhotonView targetView = PhotonView.Find(playerViewID);
+        var targetView = PhotonView.Find(playerViewID);
         if (!targetView.TryGetComponent<PlayerManager>(out var player)) return;
         if (!targetView.IsMine) return;
 
-        List<CardData> cardDataList = new();
+        // Determine which list this card belongs to based on its parent container
+        var zone = GetZoneFromTransform(cardTransform.parent);
+        List<CardData> sourceList;
+        switch (zone)
+        {
+            case CardZone.Hand:
+                sourceList = player.hand;
+                break;
+            case CardZone.Lineup:
+                sourceList = GameManager.Instance.lineUpCards;
+                break;
+            case CardZone.SuperVillain:
+                sourceList = GameManager.Instance.superVillainCards;
+                break;
+            default:
+                return;
+        }
 
-        if (cardTransform.parent == player.handTransform)
-        {
-            cardDataList = player.hand;
-        }
-        else if (cardTransform.parent == GameManager.Instance.lineUpCardsTransform)
-        {
-            cardDataList = GameManager.Instance.lineUpCards;
-        }
-        else if (cardTransform.parent == GameManager.Instance.superVillainCardsTransform)
-        {
-            cardDataList = GameManager.Instance.superVillainCards;
-        }
-        else
-        {
-            return;
-        }
-
-        cardDataList.Remove(cardData);
+        sourceList.Remove(cardData);
         player.discardPile.Add(cardData);
 
-        photonView.RPC(nameof(RPC_MoveToDiscardPile), RpcTarget.OthersBuffered,
-            playerViewID, cardData.GetCardID(), cardManager.ConvertCardDataToIds(cardDataList),
-            cardManager.ConvertCardDataToIds(player.discardPile));
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMoveToDiscardPile), RpcTarget.OthersBuffered,
+            playerViewID, photonView.ViewID, cardData.GetCardID(), (int)zone);
 
         Destroy(gameObject);
     }
 
-    [PunRPC]
-    public void RPC_MoveToDiscardPile(int playerViewID, int cardId, int[] cardIds, int[] discardPileIds)
+    private CardZone GetZoneFromTransform(Transform parent)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
-
-        int removeIndex;
-
-        // Sync the hand and discard pile for the other players
-        player.hand = cardManager.ConvertCardIdsToCardData(cardIds);
-        player.discardPile = cardManager.ConvertCardIdsToCardData(discardPileIds);
-
-        removeIndex = GameManager.Instance.lineUpCards.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) GameManager.Instance.lineUpCards.RemoveAt(removeIndex);
-
-        removeIndex = GameManager.Instance.superVillainCards.FindIndex(card => card.GetCardID() == cardId);
-        if (removeIndex >= 0) GameManager.Instance.superVillainCards.RemoveAt(removeIndex);
-
-        Destroy(gameObject);
+        foreach (var zone in PlayerManager._zones)
+        {
+            if (zone.Value.container == parent) return zone.Key;
+        }
+        return CardZone.Unknown;
     }
 
     public virtual void OnPointerClick(PointerEventData eventData) { }
