@@ -110,7 +110,6 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         outer.text = power.ToString();
     }
 
-
     protected void MoveToPlayArea()
     {
         if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var player)) return;
@@ -131,7 +130,6 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     protected void MoveToLocationArea()
     {
         if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var player)) return;
-
         if (transform.parent == player.locationTransform) return;
 
         if (cardTransform == player.handTransform)
@@ -142,18 +140,8 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         player.locationCards.Add(cardData);
         transform.SetParent(player.locationTransform, false);
 
-        photonView.RPC(nameof(RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
-            playerViewID, cardManager.ConvertCardDataToIds(player.hand),
-            cardManager.ConvertCardDataToIds(player.locationCards));
-    }
-
-    [PunRPC]
-    public void RPC_MoveToLocationArea(int playerViewID, int[] handIds, int[] locationCardsIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
-
-        player.hand = cardManager.ConvertCardIdsToCardData(handIds);
-        player.locationCards = cardManager.ConvertCardIdsToCardData(locationCardsIds);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
+            playerViewID, photonView.ViewID, cardData.GetCardID());
     }
 
     protected void MoveToDiscardPile()

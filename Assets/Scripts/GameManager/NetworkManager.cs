@@ -125,6 +125,21 @@ public class NetworkManager : MonoBehaviourPun
         GameManager.Instance.playedCards.Add(card);
     }
 
+    [PunRPC]
+    public void RPC_MoveToLocationArea(int playerViewID, int cardViewID, int cardId)
+    {
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
+
+        var card = CardManager.Instance.FindCardDataById(cardId);
+        player.hand.Remove(card);
+
+        var cardView = PhotonView.Find(cardViewID);
+        if (cardView == null) return;
+
+        cardView.transform.SetParent(player.locationTransform);
+        player.locationCards.Add(card);
+    }
+
     #region Turn Management
     [PunRPC]
     public void RPC_SetTurnOrder(int[] actorNumbers)
