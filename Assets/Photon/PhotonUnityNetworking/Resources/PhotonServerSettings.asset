@@ -119,6 +119,7 @@ MonoBehaviour:
   - RPC_SyncPlayedCardsToDiscardPile
   - RPC_SyncPlayerDraw
   - RPC_SyncPlayerHand
+  - RPC_SyncMoveToPlayArea
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

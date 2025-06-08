@@ -10,6 +10,7 @@ using UnityEngine.UI;
 public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     private CardManager cardManager;
+    private PhotonView NetworkManagerView;
 
     public CardData cardData;
     public Image image;
@@ -33,6 +34,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     protected virtual void Awake()
     {
         cardManager = CardManager.Instance;
+        NetworkManagerView = NetworkManager.Instance.photonView;
         cardTransform = GetComponent<RectTransform>();
     }
 
@@ -122,18 +124,8 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(cardData);
 
-        photonView.RPC(nameof(RPC_SyncMoveToPlayArea), RpcTarget.OthersBuffered);
-    }
-
-    [PunRPC]
-    public void RPC_SyncMoveToPlayArea()
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
-
-        player.hand.Remove(cardData);
-
-        transform.SetParent(GameManager.Instance.playedCardsTransform, false);
-        GameManager.Instance.playedCards.Add(cardData);
+        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMoveToPlayArea), RpcTarget.OthersBuffered,
+            playerViewID, photonView.ViewID, cardData.GetCardID());
     }
 
     protected void MoveToLocationArea()
