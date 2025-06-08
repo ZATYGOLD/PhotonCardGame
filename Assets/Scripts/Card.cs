@@ -119,22 +119,21 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
             player.hand.Remove(cardData);
         }
 
-        gameObject.transform.SetParent(GameManager.Instance.playedCardsTransform, false);
+        transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(cardData);
 
-        photonView.RPC(nameof(RPC_MoveToPlayArea), RpcTarget.OthersBuffered, cardManager.ConvertCardDataToIds(player.hand),
-            cardManager.ConvertCardDataToIds(GameManager.Instance.playedCards));
+        photonView.RPC(nameof(RPC_SyncMoveToPlayArea), RpcTarget.OthersBuffered);
     }
 
     [PunRPC]
-    public void RPC_MoveToPlayArea(int[] cardIds, int[] playedCards)
+    public void RPC_SyncMoveToPlayArea()
     {
         if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
-        player.hand = cardManager.ConvertCardIdsToCardData(cardIds);
+        player.hand.Remove(cardData);
 
-        GameManager.Instance.playedCards = cardManager.ConvertCardIdsToCardData(playedCards);
         transform.SetParent(GameManager.Instance.playedCardsTransform, false);
+        GameManager.Instance.playedCards.Add(cardData);
     }
 
     protected void MoveToLocationArea()

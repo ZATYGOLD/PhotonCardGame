@@ -124,6 +124,7 @@ MonoBehaviour:
   middle: {fileID: 2674940863189427818}
   outer: {fileID: 4882455687782010902}
   value: {fileID: 5945795456284367826}
+  visualContainer: {fileID: 0}
 --- !u!1 &1016559455480665849
 GameObject:
   m_ObjectHideFlags: 0
