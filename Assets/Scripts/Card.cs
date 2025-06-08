@@ -22,14 +22,12 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [Header("Value Text")]
     [SerializeField] private TMP_Text value;
 
+    [Header("Visual Offset Container")]
+    [SerializeField] protected RectTransform visualContainer;
+
     protected RectTransform cardTransform;
     protected int playerViewID;
     protected bool isHovering = false;
-    protected static HandCard currentlyHovered;
-    protected GameObject placeholder;
-    protected int placeholderIndex;
-    protected Vector3 worldPos;
-
 
 
     protected virtual void Awake()
@@ -113,37 +111,27 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToPlayArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var player)) return;
         if (transform.parent == GameManager.Instance.playedCardsTransform) return;
 
-        //List<CardData> cardDataList = new();
-
-        if (cardTransform.parent == playerManager.handTransform)
+        if (cardTransform.parent == player.handTransform)
         {
-            playerManager.hand.Remove(cardData);
+            player.hand.Remove(cardData);
         }
-
-        // if (cardTransform == GameManager.Instance.lineUpCardsTransform)
-        // {
-        //     GameManager.Instance.lineUpCards.Remove(cardData);
-        //     cardDataList = GameManager.Instance.lineUpCards;
-        // }
 
         gameObject.transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(cardData);
 
-        photonView.RPC(nameof(RPC_MoveToPlayArea), RpcTarget.OthersBuffered, cardManager.ConvertCardDataToIds(playerManager.hand),
+        photonView.RPC(nameof(RPC_MoveToPlayArea), RpcTarget.OthersBuffered, cardManager.ConvertCardDataToIds(player.hand),
             cardManager.ConvertCardDataToIds(GameManager.Instance.playedCards));
     }
 
     [PunRPC]
     public void RPC_MoveToPlayArea(int[] cardIds, int[] playedCards)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(cardIds);
-
-        //GameManager.Instance.lineUpCards = cardManager.ConvertCardIdsToCardData(cardIds);
+        player.hand = cardManager.ConvertCardIdsToCardData(cardIds);
 
         GameManager.Instance.playedCards = cardManager.ConvertCardIdsToCardData(playedCards);
         transform.SetParent(GameManager.Instance.playedCardsTransform, false);
@@ -151,30 +139,30 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToLocationArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var player)) return;
 
-        if (transform.parent == playerManager.locationTransform) return;
+        if (transform.parent == player.locationTransform) return;
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform == player.handTransform)
         {
-            playerManager.hand.Remove(cardData);
+            player.hand.Remove(cardData);
         }
 
-        playerManager.locationCards.Add(cardData);
-        transform.SetParent(playerManager.locationTransform, false);
+        player.locationCards.Add(cardData);
+        transform.SetParent(player.locationTransform, false);
 
         photonView.RPC(nameof(RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
-            playerViewID, cardManager.ConvertCardDataToIds(playerManager.hand),
-            cardManager.ConvertCardDataToIds(playerManager.locationCards));
+            playerViewID, cardManager.ConvertCardDataToIds(player.hand),
+            cardManager.ConvertCardDataToIds(player.locationCards));
     }
 
     [PunRPC]
     public void RPC_MoveToLocationArea(int playerViewID, int[] handIds, int[] locationCardsIds)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(handIds);
-        playerManager.locationCards = cardManager.ConvertCardIdsToCardData(locationCardsIds);
+        player.hand = cardManager.ConvertCardIdsToCardData(handIds);
+        player.locationCards = cardManager.ConvertCardIdsToCardData(locationCardsIds);
     }
 
     protected void MoveToDiscardPile()
@@ -222,13 +210,13 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [PunRPC]
     public void RPC_MoveToDiscardPile(int playerViewID, int cardId, int[] cardIds, int[] discardPileIds)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
         int removeIndex;
 
         // Sync the hand and discard pile for the other players
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile = cardManager.ConvertCardIdsToCardData(discardPileIds);
+        player.hand = cardManager.ConvertCardIdsToCardData(cardIds);
+        player.discardPile = cardManager.ConvertCardIdsToCardData(discardPileIds);
 
         removeIndex = GameManager.Instance.lineUpCards.FindIndex(card => card.GetCardID() == cardId);
         if (removeIndex >= 0) GameManager.Instance.lineUpCards.RemoveAt(removeIndex);
@@ -237,40 +225,6 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         if (removeIndex >= 0) GameManager.Instance.superVillainCards.RemoveAt(removeIndex);
 
         Destroy(gameObject);
-    }
-
-    protected virtual void BeginHover()
-    {
-        if (isHovering) return;
-        isHovering = true;
-    }
-
-    protected virtual void EndHover()
-    {
-        if (!isHovering) return;
-        isHovering = false;
-        currentlyHovered = null;
-    }
-
-    protected virtual void CreatePlaceholder()
-    {
-        worldPos = cardTransform.position;
-        placeholderIndex = cardTransform.GetSiblingIndex();
-
-        placeholder = new GameObject("CardPlaceholder", typeof(RectTransform));
-        var cardLE = GetComponent<LayoutElement>();
-        var phLE = placeholder.AddComponent<LayoutElement>();
-        phLE.minWidth = cardLE.minWidth;
-        phLE.minHeight = cardLE.minHeight;
-        phLE.preferredWidth = cardLE.preferredWidth;
-        phLE.preferredHeight = cardLE.preferredHeight;
-        phLE.flexibleWidth = cardLE.flexibleWidth;
-        phLE.flexibleHeight = cardLE.flexibleHeight;
-        phLE.layoutPriority = cardLE.layoutPriority;
-
-        RectTransform phRect = placeholder.GetComponent<RectTransform>();
-        phRect.sizeDelta = cardTransform.sizeDelta;
-        phRect.localPosition = Vector3.zero;
     }
 
     public virtual void OnPointerClick(PointerEventData eventData) { }
