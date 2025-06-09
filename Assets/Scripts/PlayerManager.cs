@@ -52,7 +52,7 @@ public class PlayerManager : MonoBehaviourPun
     public event Action<CardData, PlayerManager> OnPlayerCardDiscarded; // TODO: Implement
 
     private static readonly Dictionary<int, PlayerManager> PLAYERS = new();
-    private static readonly Dictionary<CardZone, (RectTransform container, List<CardData> list)> _zones = new();
+    public static readonly Dictionary<CardZone, (RectTransform container, List<CardData> list)> _zones = new();
 
     void Awake()
     {
@@ -318,14 +318,14 @@ public class PlayerManager : MonoBehaviourPun
             info.list.Remove(card);
     }
 
-    private CardZone GetZoneFromTransform(Transform parent)
-    {
-        foreach (var zone in _zones)
-        {
-            if (zone.Value.container == parent) return zone.Key;
-        }
-        return CardZone.Unknown;
-    }
+    // private CardZone GetZoneFromTransform(Transform parent)
+    // {
+    //     foreach (var zone in _zones)
+    //     {
+    //         if (zone.Value.container == parent) return zone.Key;
+    //     }
+    //     return CardZone.Unknown;
+    // }
 
     private void DestroyZoneVisual(CardZone zone)
     {
