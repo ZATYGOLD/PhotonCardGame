@@ -7,6 +7,8 @@ public class HandCard : Card
     PhotonView ownerPhotonView;
     private PlayerManager player;
     private float halfH;
+    [Header("Canvas")]
+    [SerializeField] protected Canvas visualCanvas;
 
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
     {
@@ -28,7 +30,7 @@ public class HandCard : Card
         if (player != null)
         {
             transform.SetParent(player.handTransform, false);
-            halfH = cardTransform.rect.height * 0.5f;
+            halfH = cardTransform.rect.height * 0.52f;
             Vector3 a = visualContainer.anchoredPosition;
             visualContainer.anchoredPosition = new Vector3(a.x, a.y - halfH, a.z);
         }
@@ -45,10 +47,10 @@ public class HandCard : Card
 
         if (cardData.GetCardType() == CardType.Location)
         {
-            //visualCanvas.sortingOrder = 0;
             MoveToLocationArea();
             return;
         }
+
         Vector3 a = visualContainer.localPosition;
         visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
         MoveToPlayArea();
@@ -56,15 +58,14 @@ public class HandCard : Card
 
     public override void OnPointerEnter(PointerEventData eventData)
     {
-        if (player == null || cardTransform.parent != player.handTransform) return;
-
-        if (isHovering) return;
+        if (player == null || isHovering) return;
         isHovering = true;
-
-        //visualCanvas.sortingOrder = 2;
-        Vector3 a = visualContainer.localPosition;
-        visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
-
+        if (cardTransform.parent == player.handTransform || cardTransform.parent == player.locationTransform)
+        {
+            //visualCanvas.sortingOrder = 2;
+            Vector3 a = visualContainer.localPosition;
+            visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
+        }
     }
 
     public override void OnPointerExit(PointerEventData eventData)

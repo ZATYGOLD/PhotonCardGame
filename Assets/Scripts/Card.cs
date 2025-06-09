@@ -28,9 +28,6 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     [SerializeField] public RectTransform visualContainer;
     [SerializeField] protected RectTransform cardTransform;
 
-    // [Header("Canvas")]
-    // [SerializeField] protected Canvas visualCanvas;
-
     protected int playerViewID;
     protected bool isHovering = false;
     protected int originalIndex;
