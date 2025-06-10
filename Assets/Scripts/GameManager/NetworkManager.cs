@@ -30,7 +30,7 @@ public class NetworkManager : MonoBehaviourPun
         GameManager gm = GameManager.Instance;
         int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
         if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
-        gm.lineUpCards.Add(CardManager.Instance.FindCardDataById(cardId));
+        gm.lineUpCards.Add(CardManager.Instance.GetCardById(cardId));
     }
 
     [PunRPC]
@@ -45,14 +45,14 @@ public class NetworkManager : MonoBehaviourPun
         GameManager gm = GameManager.Instance;
         int removeIndex = gm.superVillainDeck.FindIndex(card => card.GetCardID() == cardId);
         if (removeIndex >= 0) gm.superVillainDeck.RemoveAt(removeIndex);
-        gm.superVillainCards.Add(CardManager.Instance.FindCardDataById(cardId));
+        gm.superVillainCards.Add(CardManager.Instance.GetCardById(cardId));
     }
 
     [PunRPC]
     public void RPC_ReceiveCharacterIndex(int charId)
     {
         PlayerManager local = PlayerManager.Local;
-        local.character = CardManager.Instance.FindCardDataById(charId);
+        local.character = CardManager.Instance.GetCardById(charId);
         local.Setup(PhotonNetwork.LocalPlayer);
     }
 
@@ -60,26 +60,7 @@ public class NetworkManager : MonoBehaviourPun
     public void RPC_SyncCharacters(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        player.character = CardManager.Instance.FindCardDataById(cardId);
-    }
-
-    [PunRPC]
-    public void RPC_SyncPlayerDeck(int viewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        List<CardData> newDeck = cardIds.Select(cardId => CardManager.Instance.FindCardDataById(cardId)).ToList();
-        player.deck = newDeck;
-    }
-
-    [PunRPC]
-    public void RPC_SyncPlayerDraw(int viewID, int cardId)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        int index = player.deck.FindIndex(card => card.GetCardID() == cardId);
-        if (index >= 0) player.deck.RemoveAt(index);
-
-        CardData card = CardManager.Instance.FindCardDataById(cardId);
-        player.hand.Add(card);
+        player.character = CardManager.Instance.GetCardById(cardId);
     }
 
     [PunRPC]
@@ -116,7 +97,7 @@ public class NetworkManager : MonoBehaviourPun
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
 
-        var card = CardManager.Instance.FindCardDataById(cardId);
+        var card = CardManager.Instance.GetCardById(cardId);
         player.hand.Remove(card);
 
         var cardView = PhotonView.Find(cardViewID);
@@ -137,7 +118,7 @@ public class NetworkManager : MonoBehaviourPun
     {
         if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
-        var card = CardManager.Instance.FindCardDataById(cardId);
+        var card = CardManager.Instance.GetCardById(cardId);
         player.hand.Remove(card);
 
         var cardView = PhotonView.Find(cardViewID);
@@ -152,7 +133,7 @@ public class NetworkManager : MonoBehaviourPun
     {
         if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
 
-        var card = CardManager.Instance.FindCardDataById(cardId);
+        var card = CardManager.Instance.GetCardById(cardId);
 
         switch ((CardZone)zone)
         {

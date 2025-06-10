@@ -122,6 +122,9 @@ MonoBehaviour:
   - RPC_SyncMoveToPlayArea
   - RPC_SyncMoveToDiscardPile
   - RPC_SyncMoveToLocationArea
+  - RPC_SyncDraw
+  - RPC_SyncRefill
+  - RPC_SyncShuffle
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

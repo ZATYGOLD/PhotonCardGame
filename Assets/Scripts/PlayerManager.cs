@@ -108,8 +108,8 @@ public class PlayerManager : MonoBehaviourPun
         deck = GameManager.Instance.playerDeck;
 
         InstantiateCharacter();
-        ShuffleDeck(this);
-        DrawCard(this, 5);
+        DeckManager.Instance.ShuffleDeck(GetViewID());
+        DeckManager.Instance.DrawCards(GetViewID(), 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
@@ -132,30 +132,6 @@ public class PlayerManager : MonoBehaviourPun
     }
     #endregion
 
-    public void DrawCard(PlayerManager player, int count = 1)
-    {
-        var sourceList = player.deck;
-        var destinationList = player.hand;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (sourceList.Count <= 0)
-            {
-                AddDiscardPileToDeck(player);
-                if (sourceList.Count == 0) return;
-            }
-
-            CardData card = sourceList[0];
-            sourceList.RemoveAt(0);
-            destinationList.Add(card);
-
-            PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-                new object[] { card.GetCardID(), player.GetViewID() });
-
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
-        }
-    }
-
     public void AddDiscardPileToDeck(PlayerManager player)
     {
         if (player.discardPile.Count == 0) return;
@@ -165,13 +141,6 @@ public class PlayerManager : MonoBehaviourPun
         global::NetworkManager.Instance.Shuffle(player.deck);
 
         NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
-            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
-    }
-
-    public void ShuffleDeck(PlayerManager player)
-    {
-        GameManager.Instance.Shuffle(player.deck);
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
@@ -289,7 +258,7 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        DrawCard(this, 5);
+        DeckManager.Instance.DrawCards(GetViewID(), 5);
     }
 
     private void HandleTurnStarted(int actorNumber)
