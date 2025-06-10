@@ -48,10 +48,10 @@ public class CardManager : MonoBehaviourPun
         CardData card = deck[0]; deck.RemoveAt(0); return card;
     }
 
-    public void InstantiateHandCard(CardData data, int ownerViewID)
+    public void SpawnHandCard(int cardId, int viewID)
     {
-        PhotonNetwork.Instantiate(handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-            new object[] { data.GetCardID(), ownerViewID });
+        PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
+                new object[] { cardId, viewID });
     }
 
     // public void InstantiateBoardCard(CardData data, int zoneIndex)
@@ -66,7 +66,7 @@ public class CardManager : MonoBehaviourPun
     }
 
 
-    public CardData FindCardDataById(int cardId)
+    public CardData GetCardById(int cardId)
     {
         if (CARD_LIST.TryGetValue(cardId, out var data)) return data;
         Debug.LogError($"CardData ID {cardId} not found in CARD_LIST.");
@@ -80,7 +80,7 @@ public class CardManager : MonoBehaviourPun
 
         foreach (int cardId in cardIds)
         {
-            CardData card = FindCardDataById(cardId);
+            CardData card = GetCardById(cardId);
             if (card != null)
             {
                 cardDataList.Add(card);

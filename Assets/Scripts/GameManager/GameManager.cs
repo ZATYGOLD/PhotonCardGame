@@ -60,7 +60,8 @@ public class GameManager : MonoBehaviourPun
             AssignCharacters();
             InitializeDecks();
             SetLineUp();
-            SetupTurnOrder();
+            //SetupTurnOrder();
+            TurnManager.Instance.SetupTurnOrder();
         }
     }
 
@@ -184,61 +185,6 @@ public class GameManager : MonoBehaviourPun
                 break;
         }
     }
-
-    #region Turn Setup
-    private void SetupTurnOrder()
-    {
-        playerActorNumbers.Clear();
-        foreach (var player in PhotonNetwork.PlayerList)
-        {
-            playerActorNumbers.Add(player.ActorNumber);
-        }
-
-        Shuffle(playerActorNumbers);
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SetTurnOrder), RpcTarget.AllBuffered, playerActorNumbers.ToArray());
-
-        currentPlayerIndex = 0;
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
-    }
-
-    // Move to the next player
-    public void NextTurn()
-    {
-        if (!PhotonNetwork.IsMasterClient) return;
-        currentPlayerIndex = (currentPlayerIndex + 1) % playerActorNumbers.Count;
-        Debug.Log($"Next player ActorNumber: {playerActorNumbers[currentPlayerIndex]}");
-
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_StartTurn), RpcTarget.AllBuffered, playerActorNumbers[currentPlayerIndex]);
-    }
-
-    public void RequestEndTurn(int actorNumber)
-    {
-        if (PhotonNetwork.IsMasterClient)
-        {
-            ProcessEndTurn(actorNumber);
-        }
-        else
-        {
-            Debug.Log("GameManager - RequestEndTurn - NotMasterClient |  playerActorNumber: " + actorNumber);
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_RequestEndTurn), RpcTarget.MasterClient, actorNumber);
-        }
-    }
-
-    public void ProcessEndTurn(int actorNumber)
-    {
-        if (actorNumber != playerActorNumbers[currentPlayerIndex]) return;
-
-        photonView.RPC(nameof(RPC_OnTurnEnded), RpcTarget.All, actorNumber);
-        NextTurn();
-    }
-
-    [PunRPC]
-    public void RPC_OnTurnEnded(int actorNumber)
-    {
-        Debug.Log($"RPC_OnTurnEnded called for playerActorNumber: {actorNumber}");
-        OnTurnEnded?.Invoke(actorNumber);
-    }
-    #endregion
 
     #region Helper
     public void Shuffle<T>(List<T> list)

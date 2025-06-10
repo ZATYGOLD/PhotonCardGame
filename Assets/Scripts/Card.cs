@@ -60,7 +60,7 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         if (TryParseInstantiationData(info, out int cardID, out int ownerID))
         {
             playerViewID = ownerID;
-            CardData data = cardManager.FindCardDataById(cardID);
+            CardData data = cardManager.GetCardById(cardID);
             if (data != null)
             {
                 SetCardData(data);

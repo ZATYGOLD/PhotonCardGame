@@ -108,12 +108,14 @@ public class PlayerManager : MonoBehaviourPun
         deck = GameManager.Instance.playerDeck;
 
         InstantiateCharacter();
-        ShuffleDeck(this);
-        DrawCard(this, 5);
+        DeckManager.Instance.ShuffleDeck(GetViewID());
+        DeckManager.Instance.DrawCards(GetViewID(), 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
-        GameManager.Instance.OnTurnEnded += HandleTurnEnded;
+        TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
+        TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
+        TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
     }
 
     #region Character
@@ -130,30 +132,6 @@ public class PlayerManager : MonoBehaviourPun
     }
     #endregion
 
-    public void DrawCard(PlayerManager player, int count = 1)
-    {
-        var sourceList = player.deck;
-        var destinationList = player.hand;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (sourceList.Count <= 0)
-            {
-                AddDiscardPileToDeck(player);
-                if (sourceList.Count == 0) return;
-            }
-
-            CardData card = sourceList[0];
-            sourceList.RemoveAt(0);
-            destinationList.Add(card);
-
-            PhotonNetwork.Instantiate(CardManager.Instance.handCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
-                new object[] { card.GetCardID(), player.GetViewID() });
-
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDraw), RpcTarget.OthersBuffered, player.GetViewID(), card.GetCardID());
-        }
-    }
-
     public void AddDiscardPileToDeck(PlayerManager player)
     {
         if (player.discardPile.Count == 0) return;
@@ -163,13 +141,6 @@ public class PlayerManager : MonoBehaviourPun
         global::NetworkManager.Instance.Shuffle(player.deck);
 
         NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
-            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
-    }
-
-    public void ShuffleDeck(PlayerManager player)
-    {
-        GameManager.Instance.Shuffle(player.deck);
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerDeck), RpcTarget.OthersBuffered,
             player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
     }
 
@@ -260,7 +231,7 @@ public class PlayerManager : MonoBehaviourPun
         if (!IsLocal || !isMyTurn) return;
         isMyTurn = false;
         endTurnButton.gameObject.SetActive(false);
-        GameManager.Instance.RequestEndTurn(Player.ActorNumber);
+        TurnManager.Instance.EndMainPhase();
     }
 
     public void SetTurnActive(bool isActive)
@@ -287,16 +258,30 @@ public class PlayerManager : MonoBehaviourPun
 
         DiscardAllHand();
         SendPlayedCardsToDiscardPile();
-        DrawCard(this, 5);
+        DeckManager.Instance.DrawCards(GetViewID(), 5);
+    }
+
+    private void HandleTurnStarted(int actorNumber)
+    {
+        bool isActive = actorNumber == ActorNumber;
+        SetTurnActive(isActive);
+    }
+
+    private void HandleMainPhaseStarted(int actorNumber)
+    {
+        if (actorNumber != ActorNumber) return;
+        StartTurn();
     }
     #endregion
 
     void OnDestroy()
     {
-        // Unsubscribe from the event to prevent memory leaks
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnTurnEnded -= HandleTurnEnded;
-        // Remove this instance from lookup
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.OnTurnStarted -= HandleTurnStarted;
+            TurnManager.Instance.OnMainPhaseStarted -= HandleMainPhaseStarted;
+            TurnManager.Instance.OnTurnEnded -= HandleTurnEnded;
+        }
         PLAYERS.Remove(photonView.ViewID);
     }
 
@@ -317,15 +302,6 @@ public class PlayerManager : MonoBehaviourPun
         if (_zones.TryGetValue(zone, out var info))
             info.list.Remove(card);
     }
-
-    // private CardZone GetZoneFromTransform(Transform parent)
-    // {
-    //     foreach (var zone in _zones)
-    //     {
-    //         if (zone.Value.container == parent) return zone.Key;
-    //     }
-    //     return CardZone.Unknown;
-    // }
 
     private void DestroyZoneVisual(CardZone zone)
     {
