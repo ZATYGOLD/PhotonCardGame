@@ -35,7 +35,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -807, y: -106.99996}
+  m_AnchoredPosition: {x: -810.6, y: -106.99996}
   m_SizeDelta: {x: 275, y: 375}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2175197520594109284
@@ -267,7 +267,7 @@ MonoBehaviour:
   characterTransform: {fileID: 1243668487974567550}
   handTransform: {fileID: 8807211972970183788}
   locationTransform: {fileID: 6547103512521482860}
-  hoverTransform: {fileID: 0}
+  hoverTransform: {fileID: 1694700500865135912}
 --- !u!1 &3436757291445088734
 GameObject:
   m_ObjectHideFlags: 0
@@ -380,7 +380,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -522.6, y: -106}
+  m_AnchoredPosition: {x: -522.6, y: -299.99997}
   m_SizeDelta: {x: 275, y: 375}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8880487979520814269
@@ -605,7 +605,7 @@ MonoBehaviour:
   m_Spacing: -40
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
-  m_ChildControlWidth: 1
+  m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
@@ -788,11 +788,12 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7518539216877688122}
+  - {fileID: 1694700500865135912}
   m_Father: {fileID: 6972274251697507607}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 188.40001, y: -106}
+  m_AnchoredPosition: {x: 188.40001, y: -299.99997}
   m_SizeDelta: {x: 1125, y: 375}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4241881375485405467
@@ -937,6 +938,41 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &6886795761864366410
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1694700500865135912}
+  m_Layer: 5
+  m_Name: HoverOverlay
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1694700500865135912
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6886795761864366410}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7650207595758761593}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 185}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7175143726918825387
 GameObject:
   m_ObjectHideFlags: 0
@@ -1179,7 +1215,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7518539216877688122}
   - component: {fileID: 438603826818205858}
-  - component: {fileID: 7071129159740572255}
+  - component: {fileID: 8734136016729429647}
   - component: {fileID: 6362103609478646989}
   - component: {fileID: 6693803266142587984}
   m_Layer: 5
@@ -1218,7 +1254,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7432790184849822895}
   m_CullTransparentMesh: 1
---- !u!114 &7071129159740572255
+--- !u!114 &8734136016729429647
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1231,7 +1267,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.3647059}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.2}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2147,10 +2183,6 @@ PrefabInstance:
     - target: {fileID: 3077949116993275488, guid: 70605167224e2474eb7126c792aa3d16, type: 3}
       propertyPath: m_Name
       value: Horizontal Scroll View
-      objectReference: {fileID: 0}
-    - target: {fileID: 3793265974488925248, guid: 70605167224e2474eb7126c792aa3d16, type: 3}
-      propertyPath: m_Color.a
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4010457120067759779, guid: 70605167224e2474eb7126c792aa3d16, type: 3}
       propertyPath: m_SizeDelta.x

@@ -4,7 +4,6 @@ using Photon.Pun;
 using System.Linq;
 using System;
 using Photon.Realtime;
-using UnityEngine.XR;
 
 
 [RequireComponent(typeof(PhotonView))]
@@ -90,72 +89,6 @@ public class NetworkManager : MonoBehaviourPun
         List<CardData> playedCards = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
         player.discardPile.AddRange(playedCards);
         GameManager.Instance.playedCards.Clear();
-    }
-
-    [PunRPC]
-    public void RPC_SyncMoveToPlayArea(int viewID, int cardViewID, int cardId)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-
-        var card = CardManager.Instance.GetCardById(cardId);
-        player.hand.Remove(card);
-
-        var cardView = PhotonView.Find(cardViewID);
-        if (cardView == null) return;
-
-        if (cardView.TryGetComponent<Card>(out var cardComp))
-        {
-            cardComp.visualContainer.localPosition = Vector3.zero;
-        }
-
-        cardView.transform.localPosition = Vector3.zero;
-        cardView.transform.SetParent(GameManager.Instance.playedCardsTransform, false);
-        GameManager.Instance.playedCards.Add(card);
-    }
-
-    [PunRPC]
-    public void RPC_SyncMoveToLocationArea(int playerViewID, int cardViewID, int cardId)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
-
-        var card = CardManager.Instance.GetCardById(cardId);
-        player.hand.Remove(card);
-
-        var cardView = PhotonView.Find(cardViewID);
-        if (cardView == null) return;
-
-        cardView.transform.SetParent(player.locationTransform);
-        player.locationCards.Add(card);
-    }
-
-    [PunRPC]
-    public void RPC_SyncMoveToDiscardPile(int playerViewID, int cardViewID, int cardId, int zone)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var player)) return;
-
-        var card = CardManager.Instance.GetCardById(cardId);
-
-        switch ((CardZone)zone)
-        {
-            case CardZone.Hand:
-                player.hand.Remove(card);
-                break;
-            case CardZone.Lineup:
-                GameManager.Instance.lineUpCards.Remove(card);
-                break;
-            case CardZone.SuperVillain:
-                GameManager.Instance.superVillainCards.Remove(card);
-                break;
-            // add other zones if needed…
-            default:
-                return;
-        }
-
-        var cardView = PhotonView.Find(cardViewID);
-        if (cardView == null) return;
-
-        player.discardPile.Add(card);
-        Destroy(cardView.gameObject);
     }
 
     #region Turn Management

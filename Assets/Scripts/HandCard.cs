@@ -1,14 +1,12 @@
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class HandCard : Card
 {
     PhotonView ownerPhotonView;
     private PlayerManager player;
-    private float halfH;
-    [Header("Canvas")]
-    [SerializeField] protected Canvas visualCanvas;
 
     public override void OnPhotonInstantiate(PhotonMessageInfo info)
     {
@@ -21,7 +19,6 @@ public class HandCard : Card
             Destroy(gameObject);
             return;
         }
-
         AssignToOwnerArea();
     }
 
@@ -30,13 +27,11 @@ public class HandCard : Card
         if (player != null)
         {
             transform.SetParent(player.handTransform, false);
-            halfH = cardTransform.rect.height * 0.52f;
-            Vector3 a = visualContainer.anchoredPosition;
-            visualContainer.anchoredPosition = new Vector3(a.x, a.y - halfH, a.z);
         }
         else
         {
             Debug.LogError($"PlayerManager with PhotonView ID {playerViewID} not found.");
+            // Optionally, handle default positioning or destroy the card to prevent orphaned objects
             Destroy(gameObject);
         }
     }
@@ -44,6 +39,11 @@ public class HandCard : Card
     public override void OnPointerClick(PointerEventData eventData)
     {
         if (PlayerManager.Local.GetIsMyTurn() == false) return;
+        if (isHovering)
+        {
+            EndHover();
+        }
+
 
         if (cardData.GetCardType() == CardType.Location)
         {
@@ -51,30 +51,71 @@ public class HandCard : Card
             return;
         }
 
-        Vector3 a = visualContainer.localPosition;
-        visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
         MoveToPlayArea();
     }
 
     public override void OnPointerEnter(PointerEventData eventData)
     {
-        if (player == null || isHovering) return;
-        isHovering = true;
-        if (cardTransform.parent == player.handTransform || cardTransform.parent == player.locationTransform)
+        if (player == null || cardTransform.parent != player.handTransform) return;
+        if (currentlyHovered != null && currentlyHovered != this)
         {
-            //visualCanvas.sortingOrder = 2;
-            Vector3 a = visualContainer.localPosition;
-            visualContainer.localPosition = new Vector3(a.x, a.y + halfH, a.z);
+            currentlyHovered.EndHover();
         }
+
+        if (isHovering) return;
+        isHovering = true;
+        currentlyHovered = this;
+
+        CreatePlaceholder();
     }
 
     public override void OnPointerExit(PointerEventData eventData)
     {
         if (player == null || !isHovering) return;
+        if (cardTransform.parent != player.hoverTransform) return;
         isHovering = false;
 
-        //visualCanvas.sortingOrder = 1;
-        Vector3 a = visualContainer.localPosition;
-        visualContainer.localPosition = new Vector3(a.x, a.y - halfH, a.z);
+        RestoreCardPosition();
+    }
+
+    protected override void EndHover()
+    {
+        base.EndHover();
+        if (ownerPhotonView.TryGetComponent(out PlayerManager player))
+        {
+            // Only cancel if placeholder still exists under hand
+            if (placeholder != null && placeholder.transform.parent == player.handTransform)
+            {
+                // Reparent back to hand and destroy placeholder
+                Vector3 worldPos = cardTransform.position;
+                transform.SetParent(player.handTransform, false);
+                cardTransform.position = worldPos;
+                cardTransform.SetSiblingIndex(placeholderIndex);
+                Destroy(placeholder);
+            }
+        }
+    }
+
+    protected override void CreatePlaceholder()
+    {
+        base.CreatePlaceholder();
+        placeholder.transform.SetParent(player.handTransform, false);
+        placeholder.transform.SetSiblingIndex(placeholderIndex);
+
+        transform.SetParent(player.hoverTransform, false);
+        cardTransform.position = worldPos;
+
+        float halfH = cardTransform.rect.height * 0.52f;
+        cardTransform.localPosition += new Vector3(0f, halfH, 0f);
+    }
+
+    private void RestoreCardPosition()
+    {
+        transform.SetParent(player.handTransform, false);
+        cardTransform.position = worldPos;
+        float halfH = cardTransform.rect.height * 0.52f;
+        cardTransform.localPosition -= new Vector3(0f, halfH, 0f);
+        cardTransform.SetSiblingIndex(placeholderIndex);
+        Destroy(placeholder);
     }
 }

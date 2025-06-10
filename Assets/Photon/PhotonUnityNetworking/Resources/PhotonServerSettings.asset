@@ -119,9 +119,6 @@ MonoBehaviour:
   - RPC_SyncPlayedCardsToDiscardPile
   - RPC_SyncPlayerDraw
   - RPC_SyncPlayerHand
-  - RPC_SyncMoveToPlayArea
-  - RPC_SyncMoveToDiscardPile
-  - RPC_SyncMoveToLocationArea
   - RPC_SyncDraw
   - RPC_SyncRefill
   - RPC_SyncShuffle
