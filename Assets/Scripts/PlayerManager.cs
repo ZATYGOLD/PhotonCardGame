@@ -113,7 +113,9 @@ public class PlayerManager : MonoBehaviourPun
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
-        GameManager.Instance.OnTurnEnded += HandleTurnEnded;
+        TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
+        TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
+        TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
     }
 
     #region Character
@@ -260,7 +262,7 @@ public class PlayerManager : MonoBehaviourPun
         if (!IsLocal || !isMyTurn) return;
         isMyTurn = false;
         endTurnButton.gameObject.SetActive(false);
-        GameManager.Instance.RequestEndTurn(Player.ActorNumber);
+        TurnManager.Instance.EndMainPhase();
     }
 
     public void SetTurnActive(bool isActive)
@@ -289,14 +291,28 @@ public class PlayerManager : MonoBehaviourPun
         SendPlayedCardsToDiscardPile();
         DrawCard(this, 5);
     }
+
+    private void HandleTurnStarted(int actorNumber)
+    {
+        bool isActive = actorNumber == ActorNumber;
+        SetTurnActive(isActive);
+    }
+
+    private void HandleMainPhaseStarted(int actorNumber)
+    {
+        if (actorNumber != ActorNumber) return;
+        StartTurn();
+    }
     #endregion
 
     void OnDestroy()
     {
-        // Unsubscribe from the event to prevent memory leaks
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnTurnEnded -= HandleTurnEnded;
-        // Remove this instance from lookup
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.OnTurnStarted -= HandleTurnStarted;
+            TurnManager.Instance.OnMainPhaseStarted -= HandleMainPhaseStarted;
+            TurnManager.Instance.OnTurnEnded -= HandleTurnEnded;
+        }
         PLAYERS.Remove(photonView.ViewID);
     }
 
@@ -317,15 +333,6 @@ public class PlayerManager : MonoBehaviourPun
         if (_zones.TryGetValue(zone, out var info))
             info.list.Remove(card);
     }
-
-    // private CardZone GetZoneFromTransform(Transform parent)
-    // {
-    //     foreach (var zone in _zones)
-    //     {
-    //         if (zone.Value.container == parent) return zone.Key;
-    //     }
-    //     return CardZone.Unknown;
-    // }
 
     private void DestroyZoneVisual(CardZone zone)
     {

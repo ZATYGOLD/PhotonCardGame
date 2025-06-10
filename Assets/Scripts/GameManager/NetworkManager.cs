@@ -193,12 +193,6 @@ public class NetworkManager : MonoBehaviourPun
         bool isCurrentPlayer = PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
         PlayerManager.Local.SetTurnActive(isCurrentPlayer);
     }
-
-    [PunRPC]
-    public void RPC_RequestEndTurn(int actorNumber)
-    {
-        if (PhotonNetwork.IsMasterClient) { GameManager.Instance.ProcessEndTurn(actorNumber); }
-    }
     #endregion
 
     #region Helpers
