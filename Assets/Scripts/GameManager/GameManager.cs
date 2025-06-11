@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
-using System.Linq;
 using System;
 
 [RequireComponent(typeof(PhotonView))]
@@ -13,7 +12,6 @@ public class GameManager : MonoBehaviourPun
 
 
     [Header("Prefabs")]
-    [SerializeField] private GameObject playerPrefab;
     [SerializeField] private GameObject boardCardPrefab;
 
     public int power = 0;
@@ -32,7 +30,6 @@ public class GameManager : MonoBehaviourPun
     public RectTransform playedCardsTransform;
     public RectTransform lineUpCardsTransform;
     public RectTransform superVillainCardsTransform;
-    public RectTransform PlayerSpawnPoint;
 
     [Header("Players")]
     public List<CardData> characterDeck = new();
@@ -53,7 +50,7 @@ public class GameManager : MonoBehaviourPun
     {
         if (!ValidateElements()) return;
 
-        SpawnPlayer();
+        PlayerSpawner.Instance.SpawnLocalPlayer();
 
         if (PhotonNetwork.IsMasterClient)
         {
@@ -66,8 +63,7 @@ public class GameManager : MonoBehaviourPun
 
     private bool ValidateElements()
     {
-        if (PlayerSpawnPoint == null || playerPrefab == null
-            || playedCardsTransform == null || lineUpCardsTransform == null)
+        if (playedCardsTransform == null || lineUpCardsTransform == null)
         {
             Debug.LogError("Some elements in the GameManager are not assigned in the Inspector!", this);
             return false;
@@ -79,12 +75,6 @@ public class GameManager : MonoBehaviourPun
             return false;
         }
         return true;
-    }
-
-    public void SpawnPlayer()
-    {
-        GameObject playerObject = PhotonNetwork.Instantiate(playerPrefab.name, PlayerSpawnPoint.localPosition, Quaternion.identity);
-        playerObject.transform.SetParent(PlayerSpawnPoint, false);
     }
 
     private void AssignCharacters()
