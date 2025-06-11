@@ -60,7 +60,6 @@ public class GameManager : MonoBehaviourPun
             AssignCharacters();
             InitializeDecks();
             SetLineUp();
-            //SetupTurnOrder();
             TurnManager.Instance.SetupTurnOrder();
         }
     }

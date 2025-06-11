@@ -91,6 +91,9 @@ public class DeckManager : MonoBehaviourPun
         if (pm == null || pm.IsLocal) return;
 
         var card = CardManager.Instance.GetCardById(cardID);
+        int index = pm.deck.FindIndex(c => c.GetCardID() == cardID);
+        if (index >= 0) pm.deck.RemoveAt(index);
+
         pm.hand.Add(card);
         //pm.RefreshCounters(); //TODO
     }
@@ -101,9 +104,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.deck = deckIds
-            .Select(id => CardManager.Instance.GetCardById(id))
-            .ToList();
+        pm.deck = deckIds.Select(id => CardManager.Instance.GetCardById(id)).ToList();
         //pm.RefreshCounters(); //TODO
     }
 
@@ -113,9 +114,8 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.deck = deckIds
-            .Select(id => CardManager.Instance.GetCardById(id))
-            .ToList();
+        pm.deck = deckIds.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.discardPile.Clear();
         //pm.RefreshCounters(); //TODO
     }
 
