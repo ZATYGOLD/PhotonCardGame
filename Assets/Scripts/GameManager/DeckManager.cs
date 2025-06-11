@@ -6,6 +6,7 @@ using UnityEngine;
 /// <summary>
 /// Centralized manager for player deck operations: shuffling, drawing, and refilling discard piles.
 /// </summary>
+[RequireComponent(typeof(PhotonView))]
 public class DeckManager : MonoBehaviourPun
 {
     public static DeckManager Instance { get; private set; }
