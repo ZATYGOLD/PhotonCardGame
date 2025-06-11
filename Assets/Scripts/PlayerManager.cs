@@ -132,52 +132,6 @@ public class PlayerManager : MonoBehaviourPun
     }
     #endregion
 
-    public void AddDiscardPileToDeck(PlayerManager player)
-    {
-        if (player.discardPile.Count == 0) return;
-
-        player.deck.AddRange(player.discardPile);
-        player.discardPile.Clear();
-        global::NetworkManager.Instance.Shuffle(player.deck);
-
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncDiscardPileToDeck), RpcTarget.OthersBuffered,
-            player.GetViewID(), CardManager.Instance.ConvertCardDataToIds(player.deck));
-    }
-
-    #region Card Interactions
-    public void DiscardAllHand()
-    {
-        if (!IsLocal) return;
-        int[] cardIds = hand.Select(card => card.GetCardID()).ToArray();
-
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayerHand), RpcTarget.OthersBuffered,
-            photonView.ViewID, cardIds);
-
-        hand.Clear();
-        DestroyZoneVisual(CardZone.Hand);
-        discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(cardIds));
-        RefreshCounters();
-    }
-
-    public void SendPlayedCardsToDiscardPile()
-    {
-        if (!photonView.IsMine) return;
-        List<CardData> playedCards = GameManager.Instance.playedCards;
-        if (playedCards == null || playedCards.Count <= 0) return;
-
-        foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
-        { Destroy(cardObject.gameObject); }
-        discardPile.AddRange(playedCards);
-
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncPlayedCardsToDiscardPile), RpcTarget.OthersBuffered,
-            GetViewID(), CardManager.Instance.ConvertCardDataToIds(playedCards));
-
-        playedCards.Clear();
-    }
-
-
-    #endregion
-
     #region Player Lookup
     public static bool TryGetRemotePlayer(int viewID, out PlayerManager playerManager)
     {
@@ -256,8 +210,8 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (actor != ActorNumber) return;
 
-        DiscardAllHand();
-        SendPlayedCardsToDiscardPile();
+        DeckManager.Instance.DiscardHand(GetViewID());
+        DeckManager.Instance.DiscardPlayedCards(GetViewID());
         DeckManager.Instance.DrawCards(GetViewID(), 5);
     }
 
@@ -312,7 +266,7 @@ public class PlayerManager : MonoBehaviourPun
         return CardZone.Unknown;
     }
 
-    private void DestroyZoneVisual(CardZone zone)
+    public void DestroyZoneVisual(CardZone zone)
     {
         var (container, _) = _zones[zone];
         foreach (Transform child in container) Destroy(child.gameObject);

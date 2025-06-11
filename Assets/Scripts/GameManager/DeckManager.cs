@@ -9,6 +9,7 @@ using UnityEngine;
 public class DeckManager : MonoBehaviourPun
 {
     public static DeckManager Instance { get; private set; }
+    private static GameManager gm;
 
     void Awake()
     {
@@ -19,6 +20,11 @@ public class DeckManager : MonoBehaviourPun
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+
+    void Start()
+    {
+        gm = GameManager.Instance;
     }
 
     /// <summary>Draws cards for the local player and syncs with others.</summary>
@@ -49,6 +55,32 @@ public class DeckManager : MonoBehaviourPun
         }
 
         //pm.RefreshCounters(); //TODO
+    }
+
+    public void DiscardHand(int viewID)
+    {
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || !pm.IsLocal) return;
+
+        pm.discardPile.AddRange(pm.hand);
+        pm.hand.Clear();
+
+        photonView.RPC(nameof(RPC_SyncDiscardHand), RpcTarget.OthersBuffered, viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
+        PlayerManager.Local.DestroyZoneVisual(CardZone.Hand);
+
+        //pm.RefreshCounters(); //TODO
+    }
+
+    public void DiscardPlayedCards(int viewID)
+    {
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || !pm.IsLocal) return;
+
+        pm.discardPile.AddRange(gm.playedCards);
+        gm.playedCards.Clear();
+
+        photonView.RPC(nameof(RPC_SyncPlayedCards), RpcTarget.OthersBuffered, viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
+        PlayerManager.Local.DestroyZoneVisual(CardZone.Played);
     }
 
     /// <summary>Shuffles the specified player's deck and syncs with others.</summary>
@@ -99,12 +131,36 @@ public class DeckManager : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void RPC_SyncShuffle(int viewID, int[] deckIds)
+    private void RPC_SyncDiscardHand(int viewID, int[] ids)
     {
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.deck = deckIds.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.discardPile = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.hand.Clear();
+
+        //TODO: Destroy Card object
+    }
+
+    [PunRPC]
+    private void RPC_SyncPlayedCards(int viewID, int[] ids)
+    {
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || pm.IsLocal) return;
+
+        pm.discardPile = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        gm.playedCards.Clear();
+
+        PlayerManager.Local.DestroyZoneVisual(CardZone.Played);
+    }
+
+    [PunRPC]
+    private void RPC_SyncShuffle(int viewID, int[] ids)
+    {
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || pm.IsLocal) return;
+
+        pm.deck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
         //pm.RefreshCounters(); //TODO
     }
 

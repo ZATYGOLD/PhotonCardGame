@@ -62,53 +62,6 @@ public class NetworkManager : MonoBehaviourPun
         player.character = CardManager.Instance.GetCardById(cardId);
     }
 
-    [PunRPC]
-    public void RPC_SyncDiscardPileToDeck(int viewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        player.deck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-        player.discardPile.Clear();
-    }
-
-    [PunRPC]
-    public void RPC_SyncPlayerHand(int viewID, int[] ids)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        player.discardPile.AddRange(CardManager.Instance.ConvertCardIdsToCardData(ids));
-        player.hand.Clear();
-    }
-
-    [PunRPC]
-    public void RPC_SyncPlayedCardsToDiscardPile(int viewID, int[] cardIds)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-
-        foreach (Transform cardObject in GameManager.Instance.playedCardsTransform)
-        { Destroy(cardObject.gameObject); }
-
-        List<CardData> playedCards = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-        player.discardPile.AddRange(playedCards);
-        GameManager.Instance.playedCards.Clear();
-    }
-
-    #region Turn Management
-    [PunRPC]
-    public void RPC_SetTurnOrder(int[] actorNumbers)
-    {
-        GameManager.Instance.playerActorNumbers = actorNumbers.ToList();
-        Debug.Log("Turn order received.");
-    }
-
-    [PunRPC]
-    public void RPC_StartTurn(int actorNumber)
-    {
-        GameManager.Instance.currentPlayerIndex = GameManager.Instance.playerActorNumbers.IndexOf(actorNumber);
-        Debug.Log($"Starting turn for player with ActorNumber: {actorNumber}");
-        bool isCurrentPlayer = PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
-        PlayerManager.Local.SetTurnActive(isCurrentPlayer);
-    }
-    #endregion
-
     #region Helpers
     public void Shuffle<T>(List<T> list)
     {
