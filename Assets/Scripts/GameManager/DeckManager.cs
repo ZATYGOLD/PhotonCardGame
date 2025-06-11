@@ -9,8 +9,8 @@ using UnityEngine;
 public class DeckManager : MonoBehaviourPun
 {
     public static DeckManager Instance { get; private set; }
-    private static GameManager gm;
-    private static CardManager cm;
+    private GameManager gm;
+    private CardManager cm;
 
     void Awake()
     {
@@ -21,10 +21,7 @@ public class DeckManager : MonoBehaviourPun
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-    }
 
-    void Start()
-    {
         gm = GameManager.Instance;
         cm = CardManager.Instance;
     }
