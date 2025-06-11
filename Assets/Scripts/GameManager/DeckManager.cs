@@ -10,6 +10,7 @@ public class DeckManager : MonoBehaviourPun
 {
     public static DeckManager Instance { get; private set; }
     private static GameManager gm;
+    private static CardManager cm;
 
     void Awake()
     {
@@ -25,6 +26,7 @@ public class DeckManager : MonoBehaviourPun
     void Start()
     {
         gm = GameManager.Instance;
+        cm = CardManager.Instance;
     }
 
     /// <summary>Draws cards for the local player and syncs with others.</summary>
@@ -48,7 +50,7 @@ public class DeckManager : MonoBehaviourPun
             pm.hand.Add(card);
 
             // Instantiate visual card locally
-            CardManager.Instance.SpawnHandCard(card.GetCardID(), viewID);
+            cm.SpawnHandCard(card.GetCardID(), viewID);
 
             // Notify others to sync
             photonView.RPC(nameof(RPC_SyncDraw), RpcTarget.OthersBuffered, viewID, card.GetCardID());
@@ -65,7 +67,8 @@ public class DeckManager : MonoBehaviourPun
         pm.discardPile.AddRange(pm.hand);
         pm.hand.Clear();
 
-        photonView.RPC(nameof(RPC_SyncDiscardHand), RpcTarget.OthersBuffered, viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
+        photonView.RPC(nameof(RPC_SyncDiscardHand), RpcTarget.OthersBuffered,
+            viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
         PlayerManager.Local.DestroyZoneVisual(CardZone.Hand);
 
         //pm.RefreshCounters(); //TODO
@@ -79,7 +82,8 @@ public class DeckManager : MonoBehaviourPun
         pm.discardPile.AddRange(gm.playedCards);
         gm.playedCards.Clear();
 
-        photonView.RPC(nameof(RPC_SyncPlayedCards), RpcTarget.OthersBuffered, viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
+        photonView.RPC(nameof(RPC_SyncPlayedCards), RpcTarget.OthersBuffered,
+            viewID, pm.discardPile.Select(c => c.GetCardID()).ToArray());
         PlayerManager.Local.DestroyZoneVisual(CardZone.Played);
     }
 
@@ -122,7 +126,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        var card = CardManager.Instance.GetCardById(cardID);
+        var card = cm.GetCardById(cardID);
         int index = pm.deck.FindIndex(c => c.GetCardID() == cardID);
         if (index >= 0) pm.deck.RemoveAt(index);
 
@@ -136,7 +140,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.discardPile = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.discardPile = ids.Select(id => cm.GetCardById(id)).ToList();
         pm.hand.Clear();
 
         //TODO: Destroy Card object
@@ -148,7 +152,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.discardPile = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.discardPile = ids.Select(id => cm.GetCardById(id)).ToList();
         gm.playedCards.Clear();
 
         PlayerManager.Local.DestroyZoneVisual(CardZone.Played);
@@ -160,7 +164,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.deck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.deck = ids.Select(id => cm.GetCardById(id)).ToList();
         //pm.RefreshCounters(); //TODO
     }
 
@@ -170,7 +174,7 @@ public class DeckManager : MonoBehaviourPun
         var pm = PlayerManager.Get(viewID);
         if (pm == null || pm.IsLocal) return;
 
-        pm.deck = deckIds.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        pm.deck = deckIds.Select(id => cm.GetCardById(id)).ToList();
         pm.discardPile.Clear();
         //pm.RefreshCounters(); //TODO
     }
