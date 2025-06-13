@@ -48,14 +48,6 @@ public class NetworkManager : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_ReceiveCharacterIndex(int charId)
-    {
-        PlayerManager local = PlayerManager.Local;
-        local.character = CardManager.Instance.GetCardById(charId);
-        local.Setup(PhotonNetwork.LocalPlayer);
-    }
-
-    [PunRPC]
     public void RPC_SyncCharacters(int viewID, int cardId)
     {
         if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;

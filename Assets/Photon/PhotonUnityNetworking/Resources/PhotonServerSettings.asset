@@ -123,6 +123,7 @@ MonoBehaviour:
   - RPC_SyncRefill
   - RPC_SyncShuffle
   - RPC_SyncPlayedCards
+  - RPC_SyncCharacterDeck
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

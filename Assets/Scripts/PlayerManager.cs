@@ -12,14 +12,11 @@ public class PlayerManager : MonoBehaviourPun
 {
     public static PlayerManager Local { get; private set; }
     public Player Player { get; private set; }
-    public int ActorNumber => photonView.OwnerActorNr;
     public bool IsLocal => photonView.IsMine;
     private PhotonView NetworkManagerView;
 
-    [Header("Card Prefabs")]
-    [SerializeField] private GameObject characterCardPrefab;
-
     [Header("Player Information")]
+    public int ActorNumber;
     public CardData character;
     public List<CardData> deck = new();
     public List<CardData> hand = new();
@@ -41,6 +38,9 @@ public class PlayerManager : MonoBehaviourPun
     public RectTransform locationTransform;
     public RectTransform hoverTransform;
 
+    [Header("Card Prefabs")]
+    [SerializeField] private GameObject characterCardPrefab;
+
     [Header("Turn Timer")]
     private readonly float turnDuration = 50f;
     private float currentTimer;
@@ -57,6 +57,7 @@ public class PlayerManager : MonoBehaviourPun
     void Awake()
     {
         PLAYERS[photonView.ViewID] = this;
+        ActorNumber = photonView.OwnerActorNr;
         if (photonView.IsMine)
         {
             if (Local != null) { Destroy(gameObject); return; }
@@ -69,6 +70,8 @@ public class PlayerManager : MonoBehaviourPun
     void Start()
     {
         if (!ValidateElements()) return;
+        GetCharacter();
+        Setup(PhotonNetwork.LocalPlayer);
     }
 
     void Update()
@@ -119,7 +122,29 @@ public class PlayerManager : MonoBehaviourPun
     }
 
     #region Character
-    public void InstantiateCharacter()
+    private void GetCharacter()
+    {
+        if (!IsLocal) return;
+        int index = ActorNumber - 1;
+        if (index > GameManager.Instance.characterDeck.Count) index = 0;
+        Local.character = GameManager.Instance.characterDeck[index];
+        GameManager.Instance.characterDeck.RemoveAt(index);
+        int charId = Local.character.GetCardID();
+
+        photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered, GetViewID(), charId);
+    }
+
+    [PunRPC]
+    private void RPC_SyncCharacters(int viewID, int cardID)
+    {
+        var player = PLAYERS[viewID];
+        if (IsLocal || player == null) return;
+        player.character = CardManager.Instance.GetCardById(cardID);
+        int index = GameManager.Instance.characterDeck.FindIndex(c => c.GetCardID() == cardID);
+        if (index >= 0) GameManager.Instance.characterDeck.RemoveAt(index);
+    }
+
+    private void InstantiateCharacter()
     {
         if (!IsLocal) return;
         int cardId = character.GetCardID();

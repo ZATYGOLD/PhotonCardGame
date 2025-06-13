@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using System;
+using System.Linq;
+using System.Collections;
 
 [RequireComponent(typeof(PhotonView))]
 public class GameManager : MonoBehaviourPun
@@ -39,6 +41,8 @@ public class GameManager : MonoBehaviourPun
     public event Action<int> OnTurnEnded; // Event for ending a turn
     public event Action<int> OnPowerChange;
 
+    private bool IsCharacterDeckShuffled = false;
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
@@ -50,15 +54,14 @@ public class GameManager : MonoBehaviourPun
     {
         if (!ValidateElements()) return;
 
-        PlayerSpawner.Instance.SpawnLocalPlayer();
-
         if (PhotonNetwork.IsMasterClient)
         {
-            AssignCharacters();
             InitializeDecks();
             SetLineUp();
             TurnManager.Instance.SetupTurnOrder();
         }
+
+        StartCoroutine(SpawnPlayers());
     }
 
     private bool ValidateElements()
@@ -77,24 +80,10 @@ public class GameManager : MonoBehaviourPun
         return true;
     }
 
-    private void AssignCharacters()
+    private IEnumerator SpawnPlayers()
     {
-        if (!PhotonNetwork.IsMasterClient) return;
-
-        List<CardData> unused = new(characterDeck);
-        Shuffle(unused);
-
-        //Assigns Random character to each player
-        foreach (var player in PhotonNetwork.PlayerList)
-        {
-            if (player == null) continue;
-            int lastIndex = unused.Count - 1;
-            CardData chosenCharacter = unused[lastIndex];
-            unused.RemoveAt(lastIndex);
-            int charId = chosenCharacter.GetCardID();
-
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_ReceiveCharacterIndex), player, charId);
-        }
+        yield return new WaitUntil(() => IsCharacterDeckShuffled);
+        PlayerSpawner.Instance.SpawnLocalPlayer();
     }
 
     private void InitializeDecks()
@@ -104,6 +93,7 @@ public class GameManager : MonoBehaviourPun
         NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncMainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(mainDeck));
         Shuffle(superVillainDeck);
         NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillainDeck), RpcTarget.OthersBuffered, CardManager.Instance.ConvertCardDataToIds(superVillainDeck));
+        ShuffleCharacters();
     }
 
     private void SetLineUp()
@@ -156,6 +146,24 @@ public class GameManager : MonoBehaviourPun
 
             NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
         }
+    }
+
+
+    private void ShuffleCharacters()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(characterDeck);
+        IsCharacterDeckShuffled = true;
+        //var ids = CardManager.Instance.ConvertCardDataToIds(characterDeck);
+        photonView.RPC(nameof(RPC_SyncCharacterDeck), RpcTarget.AllBuffered,
+            characterDeck.Select(c => c.GetCardID()).ToArray());
+    }
+
+    [PunRPC]
+    private void RPC_SyncCharacterDeck(int[] ids)
+    {
+        characterDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        IsCharacterDeckShuffled = true;
     }
 
     public void ManagePower(PowerOperation operation, int amount = 0, CardData cardData = null)
