@@ -125,10 +125,11 @@ public class PlayerManager : MonoBehaviourPun
     private void GetCharacter()
     {
         if (!IsLocal) return;
+        var deck = GameManager.Instance.characterDeck;
         int index = ActorNumber - 1;
-        if (index > GameManager.Instance.characterDeck.Count) index = 0;
-        Local.character = GameManager.Instance.characterDeck[index];
-        GameManager.Instance.characterDeck.RemoveAt(index);
+        if (index > deck.Count) index = 0;
+        Local.character = deck[index];
+        deck.RemoveAt(index);
         int charId = Local.character.GetCardID();
 
         photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered, GetViewID(), charId);
