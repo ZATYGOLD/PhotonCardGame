@@ -10,7 +10,6 @@ public class PlayerManager : MonoBehaviourPun
 {
     public static PlayerManager Local { get; private set; }
     public bool IsLocal => photonView.IsMine;
-    private PhotonView NetworkManagerView;
 
     [Header("Player Data")]
     public int ActorNumber;
@@ -60,7 +59,6 @@ public class PlayerManager : MonoBehaviourPun
             if (Local != null) { Destroy(gameObject); return; }
             Local = this;
             SetZoneEnums();
-            NetworkManagerView = NetworkManager.Instance.photonView;
         }
     }
 
@@ -69,16 +67,16 @@ public class PlayerManager : MonoBehaviourPun
         if (!ValidateElements() || !IsLocal) return;
         playerName.text = PhotonNetwork.LocalPlayer.NickName;
         deck = GameManager.Instance.playerDeck;
-        DeckManager.Instance.ShuffleDeck(GetViewID());
-        DeckManager.Instance.DrawCards(GetViewID(), 5);
-
-        GetCharacter();
+        DeckManager.Instance.ShuffleDeck(photonView.ViewID);
+        DeckManager.Instance.DrawCards(photonView.ViewID, 5);
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
         TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
         TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
         TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
+
+        GetCharacter();
     }
 
     void Update()
@@ -117,12 +115,9 @@ public class PlayerManager : MonoBehaviourPun
         var deck = GameManager.Instance.characterDeck;
         int index = ActorNumber - 1;
         if (index > deck.Count) index = 0;
-        Local.character = deck[index];
+        character = deck[index];
         deck.RemoveAt(index);
-        int charId = Local.character.GetCardID();
         InstantiateCharacter();
-
-        photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered, GetViewID(), charId);
     }
 
     [PunRPC]
@@ -143,8 +138,7 @@ public class PlayerManager : MonoBehaviourPun
         PhotonNetwork.Instantiate(characterCardPrefab.name, Vector3.zero, Quaternion.identity, 0,
             new object[] { cardId, photonView.ViewID });
 
-        NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncCharacters), RpcTarget.OthersBuffered,
-            photonView.ViewID, cardId);
+        photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered, photonView.ViewID, cardId);
     }
     #endregion
 
@@ -186,7 +180,6 @@ public class PlayerManager : MonoBehaviourPun
     #endregion
 
     #region Player Turns
-    // This method will be called to start the player's turn
     public void StartTurn()
     {
         if (!IsLocal) return;
@@ -195,7 +188,6 @@ public class PlayerManager : MonoBehaviourPun
         endTurnButton.gameObject.SetActive(true);
     }
 
-    // This is your End Turn method
     public void EndTurn()
     {
         if (!IsLocal || !isMyTurn) return;
@@ -226,9 +218,9 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (actor != ActorNumber) return;
 
-        DeckManager.Instance.DiscardHand(GetViewID());
-        DeckManager.Instance.DiscardPlayedCards(GetViewID());
-        DeckManager.Instance.DrawCards(GetViewID(), 5);
+        DeckManager.Instance.DiscardHand(photonView.ViewID);
+        DeckManager.Instance.DiscardPlayedCards(photonView.ViewID);
+        DeckManager.Instance.DrawCards(photonView.ViewID, 5);
     }
 
     private void HandleTurnStarted(int actorNumber)
@@ -255,7 +247,6 @@ public class PlayerManager : MonoBehaviourPun
         PLAYERS.Remove(photonView.ViewID);
     }
 
-    public int GetViewID() => photonView.ViewID;
     public bool GetIsMyTurn() => isMyTurn;
 
     #region Helpers

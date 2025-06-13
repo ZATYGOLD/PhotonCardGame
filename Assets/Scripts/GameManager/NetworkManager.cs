@@ -47,13 +47,6 @@ public class NetworkManager : MonoBehaviourPun
         gm.superVillainCards.Add(CardManager.Instance.GetCardById(cardId));
     }
 
-    [PunRPC]
-    public void RPC_SyncCharacters(int viewID, int cardId)
-    {
-        if (!PlayerManager.TryGetRemotePlayer(viewID, out var player)) return;
-        player.character = CardManager.Instance.GetCardById(cardId);
-    }
-
     #region Helpers
     public void Shuffle<T>(List<T> list)
     {
