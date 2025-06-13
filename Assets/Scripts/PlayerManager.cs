@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Photon.Pun;
-using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,11 +9,10 @@ using UnityEngine.UI;
 public class PlayerManager : MonoBehaviourPun
 {
     public static PlayerManager Local { get; private set; }
-    public Player Player { get; private set; }
     public bool IsLocal => photonView.IsMine;
     private PhotonView NetworkManagerView;
 
-    [Header("Player Information")]
+    [Header("Player Data")]
     public int ActorNumber;
     public CardData character;
     public List<CardData> deck = new();
@@ -69,9 +66,19 @@ public class PlayerManager : MonoBehaviourPun
 
     void Start()
     {
-        if (!ValidateElements()) return;
+        if (!ValidateElements() || !IsLocal) return;
+        playerName.text = PhotonNetwork.LocalPlayer.NickName;
+        deck = GameManager.Instance.playerDeck;
+        DeckManager.Instance.ShuffleDeck(GetViewID());
+        DeckManager.Instance.DrawCards(GetViewID(), 5);
+
         GetCharacter();
-        Setup(PhotonNetwork.LocalPlayer);
+
+        endTurnButton.onClick.AddListener(EndTurn);
+        endTurnButton.gameObject.SetActive(false);
+        TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
+        TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
+        TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
     }
 
     void Update()
@@ -103,24 +110,6 @@ public class PlayerManager : MonoBehaviourPun
         return true;
     }
 
-    public void Setup(Player player)
-    {
-        if (!IsLocal) return;
-        Player = player;
-        playerName.text = Player.NickName;
-        deck = GameManager.Instance.playerDeck;
-
-        InstantiateCharacter();
-        DeckManager.Instance.ShuffleDeck(GetViewID());
-        DeckManager.Instance.DrawCards(GetViewID(), 5);
-
-        endTurnButton.onClick.AddListener(EndTurn);
-        endTurnButton.gameObject.SetActive(false);
-        TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
-        TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
-        TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
-    }
-
     #region Character
     private void GetCharacter()
     {
@@ -131,6 +120,7 @@ public class PlayerManager : MonoBehaviourPun
         Local.character = deck[index];
         deck.RemoveAt(index);
         int charId = Local.character.GetCardID();
+        InstantiateCharacter();
 
         photonView.RPC(nameof(RPC_SyncCharacters), RpcTarget.OthersBuffered, GetViewID(), charId);
     }
