@@ -49,7 +49,6 @@ public class GameManager : MonoBehaviourPun
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
-        NetworkManagerView = NetworkManager.Instance.photonView;
     }
 
     private void Start()
@@ -162,8 +161,19 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
             );
 
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
+            //NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(RPC_SyncSuperVillainDraw), RpcTarget.OthersBuffered, card.GetCardID());
         }
+    }
+
+    [PunRPC]
+    private void RPC_SyncSuperVillainDraw(int id)
+    {
+        var card = CardManager.Instance.GetCardById(id);
+        int index = superVillainDeck.FindIndex(c => c.GetCardID() == id);
+        if (index >= 0) superVillainDeck.RemoveAt(index);
+
+        superVillainCards.Add(card);
     }
 
     [PunRPC]
@@ -231,4 +241,12 @@ public class GameManager : MonoBehaviourPun
 #region Enums
 public enum Ownership { Unknown, Local, Remote, Shared }
 public enum PowerOperation { Add, Subtract, Reset }
+public enum CardZone
+{
+    Unknown = -1,
+    Hand = 0,
+    Lineup = 1,
+    SuperVillain = 2,
+    Played = 3
+}
 #endregion

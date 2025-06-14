@@ -126,6 +126,7 @@ MonoBehaviour:
   - RPC_SyncCharacterDeck
   - RPC_SyncSuperVillainsDeck
   - RPC_SyncMainDeckDraw
+  - RPC_SyncSuperVillainDraw
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
