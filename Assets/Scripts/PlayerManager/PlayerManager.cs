@@ -62,6 +62,16 @@ public class PlayerManager : MonoBehaviourPun
         }
     }
 
+    void OnEnable()
+    {
+        if (IsLocal && TurnManager.Instance != null)
+        {
+            TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
+            TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
+            TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
+        }
+    }
+
     void Start()
     {
         if (!ValidateElements() || !IsLocal) return;
@@ -72,11 +82,18 @@ public class PlayerManager : MonoBehaviourPun
 
         endTurnButton.onClick.AddListener(EndTurn);
         endTurnButton.gameObject.SetActive(false);
-        TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
-        TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
-        TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
 
         GetCharacter();
+    }
+
+    void OnDisable()
+    {
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.OnTurnStarted -= HandleTurnStarted;
+            TurnManager.Instance.OnMainPhaseStarted -= HandleMainPhaseStarted;
+            TurnManager.Instance.OnTurnEnded -= HandleTurnEnded;
+        }
     }
 
     void Update()
@@ -107,6 +124,7 @@ public class PlayerManager : MonoBehaviourPun
         }
         return true;
     }
+
 
     #region Character
     private void GetCharacter()
