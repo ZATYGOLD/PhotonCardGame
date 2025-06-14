@@ -142,19 +142,6 @@ public class PlayerManager : MonoBehaviourPun
     }
     #endregion
 
-    #region Player Lookup
-    public static Ownership GetOwnership(int viewID)
-    {
-        if (viewID < 0) return Ownership.Shared;
-        if (PLAYERS.TryGetValue(viewID, out var playerManager))
-        {
-            return playerManager.photonView.IsMine ? Ownership.Local : Ownership.Remote;
-        }
-
-        return Ownership.Unknown;
-    }
-    #endregion
-
     #region Player Turns
     public void StartTurn()
     {
