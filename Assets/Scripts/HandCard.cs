@@ -38,20 +38,8 @@ public class HandCard : Card
 
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (PlayerManager.Local.GetIsMyTurn() == false) return;
-        if (isHovering)
-        {
-            EndHover();
-        }
-
-
-        if (cardData.GetCardType() == CardType.Location)
-        {
-            MoveToLocationArea();
-            return;
-        }
-
-        MoveToPlayArea();
+        if (!PlayerManager.Local.GetIsMyTurn() || !isHovering) return;
+        PlayCard();
     }
 
     public override void OnPointerEnter(PointerEventData eventData)
@@ -117,5 +105,26 @@ public class HandCard : Card
         cardTransform.localPosition -= new Vector3(0f, halfH, 0f);
         cardTransform.SetSiblingIndex(placeholderIndex);
         Destroy(placeholder);
+    }
+
+    private void PlayCard()
+    {
+        if (placeholder != null)
+        {
+            Destroy(placeholder);
+            placeholder = null;
+        }
+
+        isHovering = false;
+        if (currentlyHovered == this) currentlyHovered = null;
+
+        if (cardData.GetCardType() == CardType.Location)
+        {
+            MoveToLocationArea();
+        }
+        else
+        {
+            MoveToPlayArea();
+        }
     }
 }
