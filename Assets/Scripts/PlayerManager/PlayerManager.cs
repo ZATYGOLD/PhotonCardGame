@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 using TMPro;
@@ -73,15 +74,7 @@ public class PlayerManager : MonoBehaviourPun
     void Start()
     {
         if (!ValidateElements() || !IsLocal) return;
-        playerName.text = PhotonNetwork.LocalPlayer.NickName;
-        deck = GameManager.Instance.playerDeck;
-        DeckManager.Instance.ShuffleDeck(photonView.ViewID);
-        DeckManager.Instance.DrawCards(photonView.ViewID, 5);
-
-        endTurnButton.onClick.AddListener(EndTurn);
-        endTurnButton.gameObject.SetActive(false);
-
-        GetCharacter();
+        Setup();
     }
 
     void OnDisable()
@@ -121,11 +114,24 @@ public class PlayerManager : MonoBehaviourPun
         return true;
     }
 
+    private void Setup()
+    {
+        playerName.text = PhotonNetwork.LocalPlayer.NickName;
+        deck = GameManager.Instance.playerDeck;
+        DeckManager.Instance.ShuffleDeck(photonView.ViewID);
+        DeckManager.Instance.DrawCards(photonView.ViewID, 5);
+
+        endTurnButton.onClick.AddListener(EndTurn);
+        endTurnButton.gameObject.SetActive(false);
+
+        StartCoroutine(GetCharacter());
+    }
+
 
     #region Character
-    private void GetCharacter()
+    private IEnumerator GetCharacter()
     {
-        if (!IsLocal) return;
+        yield return new WaitUntil(() => IsLocal && GameManager.Instance.IsCharacterDeckSynced);
         var deck = GameManager.Instance.characterDeck;
         int index = ActorNumber - 1;
         if (index > deck.Count) index = 0;

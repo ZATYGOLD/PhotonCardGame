@@ -3,13 +3,11 @@ using UnityEngine;
 using Photon.Pun;
 using System;
 using System.Linq;
-using System.Collections;
 
 [RequireComponent(typeof(PhotonView))]
 public class GameManager : MonoBehaviourPun
 {
     public static GameManager Instance { get; private set; }
-    private PhotonView NetworkManagerView;
     //private readonly CardManager CardManager = CardManager.Instance;
 
 
@@ -41,9 +39,7 @@ public class GameManager : MonoBehaviourPun
     public event Action<int> OnTurnEnded;
     public event Action<int> OnPowerChange;
 
-    private bool IsMainDeckSynced = false;
-    private bool IsCharacterDeckSynced = false;
-    private bool IsSuperVillainsSynced = false;
+    public bool IsCharacterDeckSynced = false;
 
     void Awake()
     {
@@ -51,17 +47,16 @@ public class GameManager : MonoBehaviourPun
         Instance = this;
     }
 
-    private void Start()
+    void Start()
     {
         if (!ValidateElements()) return;
-
         if (PhotonNetwork.IsMasterClient)
         {
             InitializeDecks();
             SetLineUp();
+            TurnManager.Instance.SetupTurnOrder();
         }
-
-        StartCoroutine(SpawnPlayers());
+        PlayerSpawner.Instance.SpawnLocalPlayer();
     }
 
     private bool ValidateElements()
@@ -74,23 +69,12 @@ public class GameManager : MonoBehaviourPun
         return true;
     }
 
-    private IEnumerator SpawnPlayers()
-    {
-        yield return new WaitUntil(() => IsCharacterDeckSynced && IsMainDeckSynced && IsSuperVillainsSynced);
-        PlayerSpawner.Instance.SpawnLocalPlayer();
-
-        if (PhotonNetwork.IsMasterClient)
-        {
-            TurnManager.Instance.SetupTurnOrder();
-        }
-    }
-
     private void InitializeDecks()
     {
         if (!PhotonNetwork.IsMasterClient) return;
+        ShuffleCharacters();
         ShuffleMainDeck();
         ShuffleSuperVillainDeck();
-        ShuffleCharacters();
     }
 
     private void SetLineUp()
@@ -190,7 +174,6 @@ public class GameManager : MonoBehaviourPun
     private void RPC_SyncMainDeck(int[] ids)
     {
         mainDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
-        IsMainDeckSynced = true;
     }
 
     [PunRPC]
@@ -208,7 +191,6 @@ public class GameManager : MonoBehaviourPun
     private void RPC_SyncSuperVillainsDeck(int[] ids)
     {
         superVillainDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
-        IsSuperVillainsSynced = true;
     }
 
     public void ManagePower(PowerOperation operation, int amount = 0, CardData cardData = null)
