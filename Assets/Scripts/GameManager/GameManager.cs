@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviourPun
     public int currentPlayerIndex;
     public List<int> playerActorNumbers = new();
 
-    public event Action<int> OnTurnEnded; // Event for ending a turn
+    public event Action<int> OnTurnEnded;
     public event Action<int> OnPowerChange;
 
     private bool IsMainDeckSynced = false;
@@ -98,6 +98,22 @@ public class GameManager : MonoBehaviourPun
         ManagePower(PowerOperation.Reset);
     }
 
+    private void ShuffleCharacters()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(characterDeck);
+        photonView.RPC(nameof(RPC_SyncCharacterDeck), RpcTarget.AllBuffered,
+            characterDeck.Select(c => c.GetCardID()).ToArray());
+    }
+
+    private void ShuffleMainDeck()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(mainDeck);
+        photonView.RPC(nameof(RPC_SyncMainDeck), RpcTarget.AllBuffered,
+           mainDeck.Select(c => c.GetCardID()).ToArray());
+    }
+
     public void DrawMainDeckCard(int count = 1)
     {
         for (int i = 0; i < count; i++)
@@ -116,8 +132,16 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 0 } //0 is for LineUpArea
             );
 
-            NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncLineUp), RpcTarget.OthersBuffered, card.GetCardID());
+            photonView.RPC(nameof(RPC_SyncMainDeckDraw), RpcTarget.OthersBuffered, card.GetCardID());
         }
+    }
+
+    private void ShuffleSuperVillainDeck()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        Shuffle(superVillainDeck);
+        photonView.RPC(nameof(RPC_SyncSuperVillainsDeck), RpcTarget.AllBuffered,
+           superVillainDeck.Select(c => c.GetCardID()).ToArray());
     }
 
     public void DrawSuperVillaincard(int count = 1)
@@ -142,12 +166,11 @@ public class GameManager : MonoBehaviourPun
         }
     }
 
-    private void ShuffleMainDeck()
+    [PunRPC]
+    private void RPC_SyncCharacterDeck(int[] ids)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
-        Shuffle(mainDeck);
-        photonView.RPC(nameof(RPC_SyncMainDeck), RpcTarget.AllBuffered,
-           mainDeck.Select(c => c.GetCardID()).ToArray());
+        characterDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
+        IsCharacterDeckSynced = true;
     }
 
     [PunRPC]
@@ -157,12 +180,15 @@ public class GameManager : MonoBehaviourPun
         IsMainDeckSynced = true;
     }
 
-    private void ShuffleSuperVillainDeck()
+    [PunRPC]
+    private void RPC_SyncMainDeckDraw(int id)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
-        Shuffle(superVillainDeck);
-        photonView.RPC(nameof(RPC_SyncSuperVillainsDeck), RpcTarget.AllBuffered,
-           superVillainDeck.Select(c => c.GetCardID()).ToArray());
+        var card = CardManager.Instance.GetCardById(id);
+        int index = mainDeck.FindIndex(c => c.GetCardID() == id);
+        if (index >= 0) mainDeck.RemoveAt(index);
+
+        lineUpCards.Add(card);
+        //pm.RefreshCounters(); //TODO
     }
 
     [PunRPC]
@@ -170,21 +196,6 @@ public class GameManager : MonoBehaviourPun
     {
         superVillainDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
         IsSuperVillainsSynced = true;
-    }
-
-    private void ShuffleCharacters()
-    {
-        if (!PhotonNetwork.IsMasterClient) return;
-        Shuffle(characterDeck);
-        photonView.RPC(nameof(RPC_SyncCharacterDeck), RpcTarget.AllBuffered,
-            characterDeck.Select(c => c.GetCardID()).ToArray());
-    }
-
-    [PunRPC]
-    private void RPC_SyncCharacterDeck(int[] ids)
-    {
-        characterDeck = ids.Select(id => CardManager.Instance.GetCardById(id)).ToList();
-        IsCharacterDeckSynced = true;
     }
 
     public void ManagePower(PowerOperation operation, int amount = 0, CardData cardData = null)
