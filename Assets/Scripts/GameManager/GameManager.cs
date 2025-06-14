@@ -59,7 +59,6 @@ public class GameManager : MonoBehaviourPun
         {
             InitializeDecks();
             SetLineUp();
-            //TurnManager.Instance.SetupTurnOrder();
         }
 
         StartCoroutine(SpawnPlayers());
@@ -166,7 +165,6 @@ public class GameManager : MonoBehaviourPun
                 new object[] { card.GetCardID(), -1, 1 } //1 is for SuperVillainArea
             );
 
-            //NetworkManagerView.RPC(nameof(NetworkManager.Instance.RPC_SyncSuperVillain), RpcTarget.OthersBuffered, card.GetCardID());
             photonView.RPC(nameof(RPC_SyncSuperVillainDraw), RpcTarget.OthersBuffered, card.GetCardID());
         }
     }
