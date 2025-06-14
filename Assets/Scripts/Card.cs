@@ -113,14 +113,15 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToPlayArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
+        var pm = PlayerManager.Get(playerViewID);
+        if (pm == null || !pm.IsLocal) return;
         if (transform.parent == GameManager.Instance.playedCardsTransform) return;
 
         //List<CardData> cardDataList = new();
 
-        if (cardTransform.parent == playerManager.handTransform)
+        if (cardTransform.parent == pm.handTransform)
         {
-            playerManager.hand.Remove(cardData);
+            pm.hand.Remove(cardData);
         }
 
         // if (cardTransform == GameManager.Instance.lineUpCardsTransform)
@@ -132,16 +133,18 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
         gameObject.transform.SetParent(GameManager.Instance.playedCardsTransform, false);
         GameManager.Instance.playedCards.Add(cardData);
 
-        photonView.RPC(nameof(RPC_MoveToPlayArea), RpcTarget.OthersBuffered, cardManager.ConvertCardDataToIds(playerManager.hand),
+        photonView.RPC(nameof(RPC_MoveToPlayArea), RpcTarget.OthersBuffered,
+            cardManager.ConvertCardDataToIds(pm.hand),
             cardManager.ConvertCardDataToIds(GameManager.Instance.playedCards));
     }
 
     [PunRPC]
     public void RPC_MoveToPlayArea(int[] cardIds, int[] playedCards)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        var pm = PlayerManager.Get(playerViewID);
+        if (pm == null || pm.IsLocal) return;
 
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(cardIds);
+        pm.hand = cardManager.ConvertCardIdsToCardData(cardIds);
 
         //GameManager.Instance.lineUpCards = cardManager.ConvertCardIdsToCardData(cardIds);
 
@@ -151,30 +154,32 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
 
     protected void MoveToLocationArea()
     {
-        if (!PlayerManager.TryGetLocalPlayer(playerViewID, out var playerManager)) return;
+        var pm = PlayerManager.Get(playerViewID);
+        if (pm == null || !pm.IsLocal) return;
 
-        if (transform.parent == playerManager.locationTransform) return;
+        if (transform.parent == pm.locationTransform) return;
 
-        if (cardTransform == playerManager.handTransform)
+        if (cardTransform == pm.handTransform)
         {
-            playerManager.hand.Remove(cardData);
+            pm.hand.Remove(cardData);
         }
 
-        playerManager.locationCards.Add(cardData);
-        transform.SetParent(playerManager.locationTransform, false);
+        pm.locationCards.Add(cardData);
+        transform.SetParent(pm.locationTransform, false);
 
         photonView.RPC(nameof(RPC_MoveToLocationArea), RpcTarget.OthersBuffered,
-            playerViewID, cardManager.ConvertCardDataToIds(playerManager.hand),
-            cardManager.ConvertCardDataToIds(playerManager.locationCards));
+            playerViewID, cardManager.ConvertCardDataToIds(pm.hand),
+            cardManager.ConvertCardDataToIds(pm.locationCards));
     }
 
     [PunRPC]
-    public void RPC_MoveToLocationArea(int playerViewID, int[] handIds, int[] locationCardsIds)
+    public void RPC_MoveToLocationArea(int viewID, int[] handIds, int[] locationCardsIds)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || pm.IsLocal) return;
 
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(handIds);
-        playerManager.locationCards = cardManager.ConvertCardIdsToCardData(locationCardsIds);
+        pm.hand = cardManager.ConvertCardIdsToCardData(handIds);
+        pm.locationCards = cardManager.ConvertCardIdsToCardData(locationCardsIds);
     }
 
     protected void MoveToDiscardPile()
@@ -220,15 +225,16 @@ public abstract class Card : MonoBehaviourPun, IPunInstantiateMagicCallback, IDr
     }
 
     [PunRPC]
-    public void RPC_MoveToDiscardPile(int playerViewID, int cardId, int[] cardIds, int[] discardPileIds)
+    public void RPC_MoveToDiscardPile(int viewID, int cardId, int[] cardIds, int[] discardPileIds)
     {
-        if (!PlayerManager.TryGetRemotePlayer(playerViewID, out var playerManager)) return;
+        var pm = PlayerManager.Get(viewID);
+        if (pm == null || pm.IsLocal) return;
 
         int removeIndex;
 
         // Sync the hand and discard pile for the other players
-        playerManager.hand = cardManager.ConvertCardIdsToCardData(cardIds);
-        playerManager.discardPile = cardManager.ConvertCardIdsToCardData(discardPileIds);
+        pm.hand = cardManager.ConvertCardIdsToCardData(cardIds);
+        pm.discardPile = cardManager.ConvertCardIdsToCardData(discardPileIds);
 
         removeIndex = GameManager.Instance.lineUpCards.FindIndex(card => card.GetCardID() == cardId);
         if (removeIndex >= 0) GameManager.Instance.lineUpCards.RemoveAt(removeIndex);

@@ -143,30 +143,6 @@ public class PlayerManager : MonoBehaviourPun
     #endregion
 
     #region Player Lookup
-    public static bool TryGetRemotePlayer(int viewID, out PlayerManager playerManager)
-    {
-        playerManager = null;
-        Ownership who = GetOwnership(viewID);
-        if (who == Ownership.Remote)
-        {
-            playerManager = PLAYERS[viewID];
-            return true;
-        }
-        return false;
-    }
-
-    public static bool TryGetLocalPlayer(int viewID, out PlayerManager playerManager)
-    {
-        playerManager = null;
-        Ownership who = GetOwnership(viewID);
-        if (who == Ownership.Local)
-        {
-            playerManager = PLAYERS[viewID];
-            return true;
-        }
-        return false;
-    }
-
     public static Ownership GetOwnership(int viewID)
     {
         if (viewID < 0) return Ownership.Shared;
