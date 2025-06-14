@@ -3,18 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
 
-/// <summary>
-/// Manages turn order and phases in a Photon-enabled card game.
-/// </summary>
 public enum TurnPhase { StartPhase, MainPhase, EndPhase }
 
 public class TurnManager : MonoBehaviourPun
 {
     public static TurnManager Instance { get; private set; }
 
-    public event Action<int> OnTurnStarted;
-    public event Action<int> OnMainPhaseStarted;
-    public event Action<int> OnTurnEnded;
+    public event Action<int, TurnPhase> OnPhaseChanged;
 
     private List<int> playerOrder = new();
     private int currentIndex;
@@ -32,9 +27,6 @@ public class TurnManager : MonoBehaviourPun
         DontDestroyOnLoad(gameObject);
     }
 
-    /// <summary>
-    /// Only the MasterClient should call this to shuffle and set turn order.
-    /// </summary>
     public void SetupTurnOrder()
     {
         if (!PhotonNetwork.IsMasterClient) return;
@@ -48,95 +40,77 @@ public class TurnManager : MonoBehaviourPun
     {
         playerOrder = order.ToList();
         currentIndex = 0;
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerOrder[currentIndex]);
+        StartTurnFor(playerOrder[currentIndex]);
     }
 
     public void NextTurn()
     {
         if (!PhotonNetwork.IsMasterClient) return;
         currentIndex = (currentIndex + 1) % playerOrder.Count;
-        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, playerOrder[currentIndex]);
+        StartTurnFor(playerOrder[currentIndex]);
+    }
+
+    private void StartTurnFor(int actorNumber)
+    {
+        photonView.RPC(nameof(RPC_StartTurn), RpcTarget.AllBuffered, actorNumber);
     }
 
     [PunRPC]
     public void RPC_StartTurn(int actorNumber)
     {
         currentActor = actorNumber;
-        OnTurnStarted?.Invoke(actorNumber);
+
         currentPhase = TurnPhase.StartPhase;
-        ProcessCurrentPhase();
+        OnPhaseChanged?.Invoke(currentActor, currentPhase);
+
+        currentPhase = TurnPhase.MainPhase;
+        OnPhaseChanged?.Invoke(currentActor, currentPhase);
     }
 
-    private void ProcessCurrentPhase()
-    {
-        switch (currentPhase)
-        {
-            case TurnPhase.StartPhase:
-                currentPhase = TurnPhase.MainPhase;
-                ProcessCurrentPhase();
-                break;
-
-            case TurnPhase.MainPhase:
-                OnMainPhaseStarted?.Invoke(currentActor);
-                break;
-
-            case TurnPhase.EndPhase:
-                // TODO: Insert draw logic here or raise an OnDrawPhase event
-                RequestEndTurn();
-                break;
-        }
-    }
-
-    /// <summary>
-    /// Call this from UI when the local player ends their main phase.
-    /// </summary>
     public void EndMainPhase()
     {
         if (currentPhase != TurnPhase.MainPhase) return;
+
+        // End Phase
         currentPhase = TurnPhase.EndPhase;
-        ProcessCurrentPhase();
+        OnPhaseChanged?.Invoke(currentActor, currentPhase);
+
+        RequestNextTurn();
     }
 
-    /// <summary>
-    /// Sends end-turn request to MasterClient or processes it if this client is Master.
-    /// </summary>
-    public void RequestEndTurn()
+    private void RequestNextTurn()
     {
         if (PhotonNetwork.IsMasterClient)
-            ProcessEndTurn(currentActor);
+        {
+            AdvanceTurn(currentActor);
+        }
         else
-            photonView.RPC(nameof(RPC_RequestEndTurn), RpcTarget.MasterClient, currentActor);
+        {
+            photonView.RPC(nameof(RPC_RequestNextTurn),
+                RpcTarget.MasterClient, currentActor);
+        }
     }
 
     [PunRPC]
-    private void RPC_RequestEndTurn(int actorNumber)
+    private void RPC_RequestNextTurn(int actorNumber)
     {
-        ProcessEndTurn(actorNumber);
+        AdvanceTurn(actorNumber);
     }
 
-    private void ProcessEndTurn(int actorNumber)
+    private void AdvanceTurn(int actorNumber)
     {
+        if (!PhotonNetwork.IsMasterClient) return;
         if (actorNumber != playerOrder[currentIndex]) return;
-        photonView.RPC(nameof(RPC_OnTurnEnded), RpcTarget.AllBuffered, actorNumber);
         NextTurn();
     }
 
-    [PunRPC]
-    private void RPC_OnTurnEnded(int actorNumber)
-    {
-        OnTurnEnded?.Invoke(actorNumber);
-    }
-
-    // Fisher-Yates shuffle
     private void Shuffle<T>(List<T> list)
     {
-        var rand = new Random();
-        int n = list.Count;
-        while (n > 1)
+        var rand = new System.Random();
+        for (int i = list.Count - 1; i > 0; i--)
         {
-            n--;
-            int k = rand.Next(n + 1);
-            (list[k], list[n]) = (list[n], list[k]);
+            int j = rand.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
         }
     }
 }

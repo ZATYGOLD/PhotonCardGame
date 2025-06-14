@@ -66,9 +66,7 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (IsLocal && TurnManager.Instance != null)
         {
-            TurnManager.Instance.OnTurnStarted += HandleTurnStarted;
-            TurnManager.Instance.OnMainPhaseStarted += HandleMainPhaseStarted;
-            TurnManager.Instance.OnTurnEnded += HandleTurnEnded;
+            TurnManager.Instance.OnPhaseChanged += HandlePhaseChanged;
         }
     }
 
@@ -90,9 +88,7 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (TurnManager.Instance != null)
         {
-            TurnManager.Instance.OnTurnStarted -= HandleTurnStarted;
-            TurnManager.Instance.OnMainPhaseStarted -= HandleMainPhaseStarted;
-            TurnManager.Instance.OnTurnEnded -= HandleTurnEnded;
+            TurnManager.Instance.OnPhaseChanged -= HandlePhaseChanged;
         }
     }
 
@@ -172,8 +168,6 @@ public class PlayerManager : MonoBehaviourPun
     public void EndTurn()
     {
         if (!IsLocal || !isMyTurn) return;
-        isMyTurn = false;
-        endTurnButton.gameObject.SetActive(false);
         TurnManager.Instance.EndMainPhase();
     }
 
@@ -194,26 +188,23 @@ public class PlayerManager : MonoBehaviourPun
         }
     }
 
-    // Event handler for when the turn ends
-    private void HandleTurnEnded(int actor)
-    {
-        if (actor != ActorNumber) return;
-
-        DeckManager.Instance.DiscardHand(photonView.ViewID);
-        DeckManager.Instance.DiscardPlayedCards(photonView.ViewID);
-        DeckManager.Instance.DrawCards(photonView.ViewID, 5);
-    }
-
-    private void HandleTurnStarted(int actorNumber)
-    {
-        bool isActive = actorNumber == ActorNumber;
-        SetTurnActive(isActive);
-    }
-
-    private void HandleMainPhaseStarted(int actorNumber)
+    private void HandlePhaseChanged(int actorNumber, TurnPhase phase)
     {
         if (actorNumber != ActorNumber) return;
-        StartTurn();
+        switch (phase)
+        {
+            case TurnPhase.StartPhase:
+                SetTurnActive(true);
+                break;
+            case TurnPhase.MainPhase:
+                break;
+            case TurnPhase.EndPhase:
+                DeckManager.Instance.DiscardHand(photonView.ViewID);
+                DeckManager.Instance.DiscardPlayedCards(photonView.ViewID);
+                DeckManager.Instance.DrawCards(photonView.ViewID, 5);
+                SetTurnActive(false);
+                break;
+        }
     }
     #endregion
 
@@ -221,9 +212,7 @@ public class PlayerManager : MonoBehaviourPun
     {
         if (TurnManager.Instance != null)
         {
-            TurnManager.Instance.OnTurnStarted -= HandleTurnStarted;
-            TurnManager.Instance.OnMainPhaseStarted -= HandleMainPhaseStarted;
-            TurnManager.Instance.OnTurnEnded -= HandleTurnEnded;
+            TurnManager.Instance.OnPhaseChanged -= HandlePhaseChanged;
         }
         PLAYERS.Remove(photonView.ViewID);
     }

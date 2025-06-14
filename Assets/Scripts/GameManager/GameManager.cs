@@ -59,7 +59,7 @@ public class GameManager : MonoBehaviourPun
         {
             InitializeDecks();
             SetLineUp();
-            TurnManager.Instance.SetupTurnOrder();
+            //TurnManager.Instance.SetupTurnOrder();
         }
 
         StartCoroutine(SpawnPlayers());
@@ -79,6 +79,11 @@ public class GameManager : MonoBehaviourPun
     {
         yield return new WaitUntil(() => IsCharacterDeckSynced && IsMainDeckSynced && IsSuperVillainsSynced);
         PlayerSpawner.Instance.SpawnLocalPlayer();
+
+        if (PhotonNetwork.IsMasterClient)
+        {
+            TurnManager.Instance.SetupTurnOrder();
+        }
     }
 
     private void InitializeDecks()
