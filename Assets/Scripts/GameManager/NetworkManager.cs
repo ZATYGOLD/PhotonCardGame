@@ -18,24 +18,12 @@ public class NetworkManager : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void RPC_SyncMainDeck(int[] cardIds)
-    {
-        GameManager.Instance.mainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
-    }
-
-    [PunRPC]
     public void RPC_SyncLineUp(int cardId)
     {
         GameManager gm = GameManager.Instance;
         int removeIndex = gm.mainDeck.FindIndex(card => card.GetCardID() == cardId);
         if (removeIndex >= 0) gm.mainDeck.RemoveAt(removeIndex);
         gm.lineUpCards.Add(CardManager.Instance.GetCardById(cardId));
-    }
-
-    [PunRPC]
-    public void RPC_SyncSuperVillainDeck(int[] cardIds)
-    {
-        GameManager.Instance.superVillainDeck = CardManager.Instance.ConvertCardIdsToCardData(cardIds);
     }
 
     [PunRPC]

@@ -124,6 +124,7 @@ MonoBehaviour:
   - RPC_SyncShuffle
   - RPC_SyncPlayedCards
   - RPC_SyncCharacterDeck
+  - RPC_SyncSuperVillainsDeck
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
